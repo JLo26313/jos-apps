@@ -1,0 +1,2282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Flappy Crossroads</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+      :root{
+        --bg:#eaf6ff; --panel:#ffffff; --ink:#17324a; --ink-soft:#44617a;
+        --accent:#e8433c; --accent-dark:#c22f28; --gold:#f5a623;
+        --chip:#dceefb; --line:#bcd7ea;
+        --shadow:0 10px 30px rgba(23,50,74,.18);
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#0d1b29; --panel:#16293c; --ink:#eaf4fd; --ink-soft:#a9c4da;
+          --accent:#ff5a4e; --accent-dark:#e8433c; --gold:#ffb940;
+          --chip:#1e3a52; --line:#2c4f6e;
+          --shadow:0 10px 30px rgba(0,0,0,.45);
+        }
+      }
+      *{ box-sizing:border-box; }
+      html,body{ margin:0; padding:0; }
+      body{
+        background:var(--bg); color:var(--ink);
+        font-family:"Nunito", system-ui, -apple-system, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .wrap{ max-width:520px; margin:0 auto; padding:14px 14px 26px; }
+      /* HUD */
+      .hud{ display:flex; align-items:stretch; gap:8px; margin-bottom:10px; }
+      .chip{
+        flex:1; background:var(--panel); border:2px solid var(--line); border-radius:14px;
+        padding:6px 4px 4px; text-align:center; box-shadow:var(--shadow);
+      }
+      .chip .lab{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+      .chip .val{ font-family:"Baloo 2", sans-serif; font-size:26px; font-weight:800; line-height:1.05; }
+      .icon-btn{
+        width:52px; min-height:52px; border-radius:14px; border:2px solid var(--line);
+        background:var(--panel); color:var(--ink); font-size:22px; cursor:pointer;
+        box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center;
+      }
+      .icon-btn:active{ transform:scale(.94); }
+      .icon-btn.off{ opacity:.45; filter:grayscale(.8); }
+      /* Stage */
+      .stage{
+        position:relative; border-radius:20px; overflow:hidden;
+        box-shadow:var(--shadow); border:3px solid var(--line);
+        background:#7ec8f7; touch-action:none; user-select:none; -webkit-user-select:none;
+      }
+      canvas{ display:block; width:100%; height:auto; }
+      /* Overlays */
+      .overlay{
+        position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+        justify-content:safe center;
+        text-align:center; padding:22px; background:rgba(10,30,48,.55); color:#fff; z-index:5;
+        overflow-y:auto;
+      }
+      /* Play bar directly under the character picker; choosing a character
+         scrolls it into view, so Play is right there after picking. */
+      .playbar{
+        width:100%; flex:none;
+        display:flex; flex-direction:column; align-items:center;
+        margin-top:auto; padding-top:16px;
+      }
+      .playbar .big-btn{ margin-top:0; }
+      .playbar .play-hint{ font-size:12.5px; font-weight:800; opacity:.85; margin-top:7px; }
+      .overlay.hidden{ display:none; }
+      .overlay h1{
+        font-family:"Baloo 2", sans-serif; font-size:40px; line-height:.95; margin:0 0 6px;
+        text-shadow:0 3px 0 rgba(0,0,0,.25);
+      }
+      .overlay h2{
+        font-family:"Baloo 2", sans-serif; font-size:34px; line-height:1; margin:0 0 8px;
+        text-shadow:0 3px 0 rgba(0,0,0,.25);
+      }
+      .overlay p{ margin:4px 0; font-weight:700; font-size:15px; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+      .rules{ margin:12px 0 4px; display:grid; gap:6px; font-size:14.5px; font-weight:700; }
+      .rules span{ background:rgba(255,255,255,.14); border-radius:10px; padding:6px 10px; }
+      .big-btn{
+        margin-top:16px; min-height:54px; padding:10px 34px; border:none; border-radius:999px;
+        background:var(--accent); color:#fff; font-family:"Baloo 2", sans-serif; font-size:22px; font-weight:800;
+        cursor:pointer; box-shadow:0 5px 0 var(--accent-dark), 0 10px 18px rgba(0,0,0,.3);
+      }
+      .big-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 var(--accent-dark); }
+      /* Unlock / skins */
+      .unlock-btn{
+        margin-top:14px; display:inline-block; max-width:100%; padding:10px 20px; border-radius:999px;
+        background:var(--gold); color:#3a2400; font-family:"Baloo 2", sans-serif; font-size:16.5px; font-weight:800;
+        text-decoration:none; box-shadow:0 4px 0 #c47f10, 0 8px 14px rgba(0,0,0,.3); line-height:1.25;
+      }
+      .unlock-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #c47f10; }
+      .secure-note{ font-size:12.5px; font-weight:700; opacity:.85; margin-top:7px; }
+      .unlocked-line{ margin-top:14px; font-family:"Baloo 2", sans-serif; font-weight:800; font-size:17px; color:#ffd76a; }
+      .skin-picker{ margin-top:10px; display:none; }
+      .skin-picker.show{ display:block; }
+      .skin-picker .lab{ font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.85; margin-bottom:7px; }
+      .skin-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+      .skin-btn{
+        border:3px solid rgba(255,255,255,.35); background:rgba(255,255,255,.12); border-radius:999px;
+        padding:4px 12px 4px 5px; display:flex; align-items:center; gap:7px; color:#fff;
+        font-family:"Nunito", sans-serif; font-weight:800; font-size:13.5px; cursor:pointer;
+      }
+      .skin-btn .dot{ width:20px; height:20px; border-radius:50%; border:2px solid rgba(0,0,0,.25); flex:none; }
+      .skin-btn.sel{ border-color:#ffd76a; background:rgba(255,215,106,.22); }
+      .skin-btn.locked{ opacity:.45; filter:grayscale(.65); }
+      .pack-group{ margin-top:13px; }
+      .pack-lab{ font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.85; margin-bottom:7px; }
+      .pack-buy{
+        display:inline-block; margin-top:8px; padding:8px 16px; border-radius:999px; border:none;
+        background:var(--gold); color:#3a2400; font-family:"Baloo 2", sans-serif; font-size:14px; font-weight:800;
+        text-decoration:none; cursor:pointer; line-height:1.25; box-shadow:0 3px 0 #c47f10, 0 6px 12px rgba(0,0,0,.25);
+      }
+      .pack-buy:active{ transform:translateY(2px); box-shadow:0 1px 0 #c47f10; }
+      .pack-secure{ font-size:11.5px; font-weight:700; opacity:.85; margin-top:5px; }
+      .skin-btn.locked::after{ content:"🔒"; font-size:11px; margin-left:1px; }
+      /* Locked-pick offer: what the pack gives you + its checkout button */
+      .offer-box{
+        margin:12px auto 0; width:100%; max-width:340px; flex:none;
+        background:rgba(255,255,255,.15); border:2px solid rgba(255,215,106,.7);
+        border-radius:14px; padding:12px 14px 10px;
+      }
+      .offer-title{ font-family:"Baloo 2", sans-serif; font-weight:800; font-size:17px; color:#ffd76a; line-height:1.2; }
+      .offer-desc{ font-size:13.5px; font-weight:700; margin-top:3px; line-height:1.4; }
+      .offer-price{ font-size:13px; font-weight:800; margin-top:5px; opacity:.92; }
+      .offer-box .pack-buy{ margin-top:9px; }
+      .promo-time{ font-size:12.5px; font-weight:800; margin-top:5px; opacity:.92; line-height:1.35; }
+      /* Promo code */
+      .promo-box{
+        margin-top:14px; width:100%; max-width:340px; background:rgba(255,255,255,.14);
+        border-radius:12px; padding:10px 12px 8px; flex:none;
+      }
+      .promo-box .promo-lab{ font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.9; margin-bottom:7px; }
+      .promo-row{ display:flex; gap:8px; }
+      .promo-input{
+        flex:1; min-width:0; padding:9px 13px; border-radius:999px; border:2px solid rgba(255,255,255,.45);
+        background:rgba(255,255,255,.96); color:#17324a; font-family:"Nunito", sans-serif; font-weight:800; font-size:14.5px;
+        outline:none;
+      }
+      .promo-input:focus{ border-color:#ffd76a; }
+      .promo-apply{
+        flex:none; padding:9px 18px; border:none; border-radius:999px; background:var(--gold); color:#3a2400;
+        font-family:"Baloo 2", sans-serif; font-size:15.5px; font-weight:800; cursor:pointer; box-shadow:0 3px 0 #c47f10;
+      }
+      .promo-apply:active{ transform:translateY(2px); box-shadow:0 1px 0 #c47f10; }
+      .promo-msg{ min-height:19px; font-size:13.5px; font-weight:800; margin-top:6px; line-height:1.3; }
+      .promo-msg.ok{ color:#a8f0b0; }
+      .promo-msg.err{ color:#ffb3ad; }
+      .stats{ display:flex; gap:10px; margin-top:10px; }
+      .stat{ background:rgba(255,255,255,.14); border-radius:12px; padding:8px 14px; min-width:84px; }
+      .stat .n{ font-family:"Baloo 2", sans-serif; font-size:26px; font-weight:800; line-height:1; }
+      .stat .t{ font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.85; }
+      .medal{ font-size:17px; font-weight:800; margin-top:10px; color:#ffd76a; min-height:22px; }
+      /* Toast */
+      .toast{
+        position:absolute; top:14px; left:50%; transform:translateX(-50%) translateY(-8px);
+        background:rgba(13,32,48,.88); color:#fff; font-family:"Baloo 2", sans-serif; font-weight:800; font-size:17px;
+        padding:7px 16px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .18s, transform .18s; z-index:6;
+        white-space:nowrap;
+      }
+      .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+      /* Flap button */
+      .flap-btn{
+        position:absolute; right:14px; bottom:14px; z-index:4;
+        width:84px; height:84px; border-radius:50%; border:none;
+        background:var(--accent); color:#fff; font-family:"Baloo 2", sans-serif; font-size:19px; font-weight:800;
+        box-shadow:0 6px 0 var(--accent-dark), 0 12px 20px rgba(0,0,0,.3); cursor:pointer;
+        display:none; align-items:center; justify-content:center;
+      }
+      .flap-btn.on{ display:flex; }
+      .flap-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--accent-dark); }
+      .paused-tag{
+        position:absolute; top:14px; left:14px; z-index:4; background:rgba(13,32,48,.85); color:#fff;
+        font-weight:800; font-size:13px; padding:6px 12px; border-radius:999px; display:none;
+      }
+      .paused-tag.show{ display:block; }
+      /* How to play */
+      .howto{
+        margin-top:14px; background:var(--panel); border:2px solid var(--line); border-radius:16px;
+        padding:14px 16px; box-shadow:var(--shadow);
+      }
+      .howto h3{ font-family:"Baloo 2", sans-serif; margin:0 0 8px; font-size:19px; }
+      .howto ul{ margin:0; padding-left:20px; color:var(--ink-soft); font-weight:700; font-size:14.5px; line-height:1.55; }
+      .howto b{ color:var(--ink); }
+      .keys{ margin-top:10px; font-size:13px; color:var(--ink-soft); font-weight:700; }
+      kbd{
+        background:var(--chip); border:1px solid var(--line); border-bottom-width:3px; border-radius:6px;
+        padding:1px 7px; font-family:inherit; font-weight:800; color:var(--ink); font-size:12.5px;
+      }
+      /* Player name, live leaderboard, challenges & sharing */
+      .challenge-banner{
+        margin-top:10px; width:100%; max-width:360px; flex:none;
+        background:rgba(255,215,106,.22); border:2px solid #ffd76a; border-radius:12px;
+        padding:9px 12px; font-family:"Baloo 2", sans-serif; font-weight:800; font-size:16px;
+        line-height:1.3; color:#ffe9a8;
+      }
+      .name-form{
+        margin-top:12px; width:100%; max-width:340px; flex:none;
+        background:rgba(255,255,255,.14); border-radius:12px; padding:10px 12px 8px;
+      }
+      .name-form .promo-lab{ font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.9; margin-bottom:7px; }
+      .name-msg{ min-height:19px; font-size:13.5px; font-weight:800; margin-top:6px; line-height:1.3; color:#a8f0b0; }
+      .lb-panel{
+        margin-top:14px; width:100%; max-width:360px; flex:none;
+        background:rgba(10,30,48,.45); border:2px solid rgba(255,255,255,.35);
+        border-radius:14px; padding:10px 12px 8px; text-align:left;
+      }
+      .lb-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+      .lb-title{ font-family:"Baloo 2", sans-serif; font-weight:800; font-size:17px; line-height:1.2; }
+      .lb-refresh{
+        flex:none; border:none; border-radius:999px; background:rgba(255,255,255,.18); color:#fff;
+        font-family:"Nunito", sans-serif; font-weight:800; font-size:12.5px; padding:5px 12px; cursor:pointer;
+      }
+      .lb-refresh:active{ transform:scale(.95); }
+      .lb-row{
+        display:grid; grid-template-columns:30px 1fr auto auto; gap:8px; align-items:baseline;
+        padding:4px 6px; border-radius:8px; font-size:14px; font-weight:700;
+      }
+      .lb-row:nth-child(odd){ background:rgba(255,255,255,.08); }
+      .lb-row.me{ background:rgba(255,215,106,.25); }
+      .lb-row .rk{ font-family:"Baloo 2", sans-serif; font-weight:800; color:#ffd76a; }
+      .lb-row .nm{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .lb-row .sc{ font-family:"Baloo 2", sans-serif; font-weight:800; }
+      .lb-row .dt{ font-size:11.5px; opacity:.75; font-weight:700; }
+      .lb-empty{ font-size:13.5px; font-weight:700; opacity:.85; padding:4px 6px; }
+      .lb-status{ font-size:12.5px; font-weight:700; opacity:.85; margin-top:5px; min-height:16px; line-height:1.35; }
+      .share-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:12px; width:100%; max-width:360px; flex:none; }
+      .share-btn{
+        flex:1 1 150px; padding:10px 12px; border:none; border-radius:999px; cursor:pointer;
+        background:rgba(255,255,255,.92); color:#17324a; font-family:"Baloo 2", sans-serif; font-size:15px; font-weight:800;
+        box-shadow:0 3px 0 rgba(0,0,0,.3); line-height:1.25;
+      }
+      .share-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3); }
+      .share-btn.gold{ background:var(--gold); color:#3a2400; }
+      .share-msg{ font-size:12.5px; font-weight:700; margin-top:7px; max-width:360px; word-break:break-all; min-height:15px; line-height:1.35; }
+      .challenge-result{ font-family:"Baloo 2", sans-serif; font-weight:800; font-size:17px; color:#ffd76a; margin-top:10px; min-height:22px; line-height:1.3; max-width:360px; }
+      .submit-line{ font-size:13.5px; font-weight:800; margin-top:4px; min-height:18px; color:#a8f0b0; line-height:1.35; max-width:360px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hud" aria-label="Game stats">
+        <div class="chip"><div class="lab">Score</div><div class="val" id="hudScore">0</div></div>
+        <div class="chip"><div class="lab">Pigs popped</div><div class="val" id="hudPigs">0</div></div>
+        <div class="chip"><div class="lab">Best</div><div class="val" id="hudBest">0</div></div>
+        <button class="icon-btn" id="pauseBtn" aria-label="Pause game" title="Pause">⏸</button>
+        <button class="icon-btn" id="soundBtn" aria-label="Toggle sound" title="Sound on/off">🔊</button>
+        <button class="icon-btn" id="musicBtn" aria-label="Toggle music" title="Music on/off">🎵</button>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="game" width="432" height="640"></canvas>
+        <div class="paused-tag" id="pausedTag">Paused — tap ▶ to resume</div>
+        <div class="toast" id="toast"></div>
+        <button class="flap-btn" id="flapBtn" aria-label="Flap">FLAP</button>
+
+        <div class="overlay" id="startOverlay">
+          <h1>Flappy<br />Crossroads</h1>
+          <p>One very determined bird. A whole town of traffic.</p>
+          <div class="challenge-banner" data-challenge-banner style="display:none"></div>
+          <form class="name-form" data-name-form>
+            <div class="promo-lab">Your leaderboard name</div>
+            <div class="promo-row">
+              <input class="promo-input" data-name-input type="text" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Your leaderboard name" />
+              <button class="promo-apply" type="submit">Save</button>
+            </div>
+            <div class="name-msg" data-name-msg aria-live="polite"></div>
+          </form>
+          <div class="rules">
+            <span>🪶 Tap, click, or press Space to flap</span>
+            <span>🚗 Fly over the cars — don't clip one</span>
+            <span>🪵 Rivers are only safe on a log</span>
+            <span>🐷 Land on a pig tower to pop the pig: +5</span>
+            <span>🥚 Grab golden eggs: +3</span>
+          </div>
+          <button class="big-btn" id="startBtn">Start flying</button>
+          <div class="lb-panel">
+            <div class="lb-head"><span class="lb-title">🏆 Top flyers — live leaderboard</span><button type="button" class="lb-refresh" data-lb-refresh>↻ Refresh</button></div>
+            <div data-lb-rows><div class="lb-empty">Loading scores…</div></div>
+            <div class="lb-status" data-lb-status aria-live="polite"></div>
+          </div>
+          <div class="share-row">
+            <button type="button" class="share-btn" data-challenge-btn>🏆 Challenge a friend</button>
+            <button type="button" class="share-btn" data-share-btn>🔗 Share my best</button>
+          </div>
+          <div class="share-msg" data-share-msg aria-live="polite"></div>
+          <div data-unlock-block>
+            <a class="unlock-btn" href="https://buy.stripe.com/6oU5kCdkw9NXag48K4cAo0n" target="_blank" rel="noopener">Unlock Flappy Crossroads — $0.99 one-time — Checkout with Stripe</a>
+            <div class="secure-note">Secure checkout via Stripe · unlocks 3 extra bird colors</div>
+          </div>
+          <div class="unlocked-line" data-unlocked-line style="display:none">Full version unlocked ✓</div>
+          <form class="promo-box" data-promo-form>
+            <div class="promo-lab">Have a promo code?</div>
+            <div class="promo-row">
+              <input class="promo-input" data-promo-input type="text" placeholder="Enter code" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Promo code" />
+              <button class="promo-apply" type="submit">Apply</button>
+            </div>
+            <div class="promo-msg" data-promo-msg aria-live="polite"></div>
+          </form>
+          <div class="skin-picker" data-skin-picker>
+            <div class="lab">Pick your character</div>
+            <div class="skin-row"></div>
+          </div>
+          <div class="playbar">
+            <button class="big-btn" data-play type="button">▶ Play</button>
+            <div class="play-hint">Picked your character? Tap Play to fly.</div>
+          </div>
+        </div>
+
+        <div class="overlay hidden" id="overOverlay">
+          <h2 id="overTitle">Splat!</h2>
+          <p id="overReason">You clipped a car.</p>
+          <div class="stats">
+            <div class="stat"><div class="n" id="finalScore">0</div><div class="t">Score</div></div>
+            <div class="stat"><div class="n" id="finalPigs">0</div><div class="t">Pigs</div></div>
+            <div class="stat"><div class="n" id="finalBest">0</div><div class="t">Best</div></div>
+          </div>
+          <div class="medal" id="medalLine"></div>
+          <div class="challenge-result" data-challenge-result></div>
+          <div class="submit-line" data-submit-line aria-live="polite"></div>
+          <div class="lb-panel">
+            <div class="lb-head"><span class="lb-title">🏆 Top flyers — live leaderboard</span><button type="button" class="lb-refresh" data-lb-refresh>↻ Refresh</button></div>
+            <div data-lb-rows><div class="lb-empty">Loading scores…</div></div>
+            <div class="lb-status" data-lb-status aria-live="polite"></div>
+          </div>
+          <div class="share-row">
+            <button type="button" class="share-btn gold" data-sendback style="display:none">📨 Send your score back</button>
+            <button type="button" class="share-btn" data-challenge-btn>🏆 Challenge a friend</button>
+            <button type="button" class="share-btn" data-share-btn>🔗 Share my best</button>
+          </div>
+          <div class="share-msg" data-share-msg aria-live="polite"></div>
+          <button class="big-btn" id="againBtn">Fly again</button>
+          <div data-unlock-block>
+            <a class="unlock-btn" href="https://buy.stripe.com/6oU5kCdkw9NXag48K4cAo0n" target="_blank" rel="noopener">Unlock Flappy Crossroads — $0.99 one-time — Checkout with Stripe</a>
+            <div class="secure-note">Secure checkout via Stripe · unlocks 3 extra bird colors</div>
+          </div>
+          <div class="unlocked-line" data-unlocked-line style="display:none">Full version unlocked ✓</div>
+          <form class="promo-box" data-promo-form>
+            <div class="promo-lab">Have a promo code?</div>
+            <div class="promo-row">
+              <input class="promo-input" data-promo-input type="text" placeholder="Enter code" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Promo code" />
+              <button class="promo-apply" type="submit">Apply</button>
+            </div>
+            <div class="promo-msg" data-promo-msg aria-live="polite"></div>
+          </form>
+          <div class="skin-picker" data-skin-picker>
+            <div class="lab">Pick your character</div>
+            <div class="skin-row"></div>
+          </div>
+          <div class="playbar">
+            <button class="big-btn" data-play type="button">▶ Play again</button>
+            <div class="play-hint">Picked your character? Tap Play to fly.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="howto">
+        <h3>How it plays</h3>
+        <ul>
+          <li><b>Flap to stay up.</b> The bird drifts forward on its own and the world scrolls past — grass, roads, and rivers.</li>
+          <li><b>Roads:</b> cars drive both ways along the ground. Skim just over a roof for a <b>near-miss +1</b> — touch one and the run ends.</li>
+          <li><b>Rivers:</b> open water is a splash landing. Logs float by — you can rest on one and ride it, then flap off before it drifts away.</li>
+          <li><b>Pig towers:</b> crates stacked on the grass with a pig on top. Drop onto the pig from above to pop it for <b>+5</b> and crumble the tower. Hit the side and it's over.</li>
+          <li><b>Scoring:</b> +1 for every stretch of road, river, or grass you cross, +3 per golden egg. The traffic speeds up the further you get.</li>
+        </ul>
+        <div class="keys">Keys: <kbd>Space</kbd> / <kbd>↑</kbd> flap &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> sound &nbsp;·&nbsp; 🎵 button (top right) turns the music on/off — it speeds up as you do</div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      "use strict";
+      var VW = 432, VH = 640;
+      var GROUND = VH - 96;          // top of the ground band
+      var WATER_TOP = GROUND - 4;    // river surface
+      var canvas = document.getElementById('game');
+      var ctx = canvas.getContext('2d');
+
+      var hudScore = document.getElementById('hudScore');
+      var hudPigs  = document.getElementById('hudPigs');
+      var hudBest  = document.getElementById('hudBest');
+      var toastEl  = document.getElementById('toast');
+      var startOverlay = document.getElementById('startOverlay');
+      var overOverlay  = document.getElementById('overOverlay');
+      var pausedTag = document.getElementById('pausedTag');
+      var soundBtn = document.getElementById('soundBtn');
+      var musicBtn = document.getElementById('musicBtn');
+      var flapBtn = document.getElementById('flapBtn');
+
+      /* ---------------- Audio (synthesized, no files) ---------------- */
+      var actx = null, muted = false;
+      function audio(){
+        if(!actx){
+          try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ actx = null; }
+        }
+        if(actx && actx.state === 'suspended'){ actx.resume(); }
+        return actx;
+      }
+      function tone(f0, f1, dur, type, vol, delay){
+        if(muted) return;
+        var a = audio(); if(!a) return;
+        var t = a.currentTime + (delay || 0);
+        var o = a.createOscillator(), g = a.createGain();
+        o.type = type; o.frequency.setValueAtTime(f0, t);
+        o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+        g.gain.setValueAtTime(vol || 0.16, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(a.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      }
+      function noiseBurst(dur, freq, vol){
+        if(muted) return;
+        var a = audio(); if(!a) return;
+        var n = Math.floor(a.sampleRate * dur);
+        var buf = a.createBuffer(1, n, a.sampleRate);
+        var d = buf.getChannelData(0);
+        for(var i = 0; i < n; i++){ d[i] = (Math.random() * 2 - 1) * (1 - i / n); }
+        var src = a.createBufferSource(); src.buffer = buf;
+        var f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+        var g = a.createGain(); g.gain.value = vol;
+        src.connect(f); f.connect(g); g.connect(a.destination);
+        src.start();
+      }
+      var sfx = {
+        flap:  function(){ tone(520, 880, 0.09, 'sine', 0.10); },
+        egg:   function(){ tone(880, 1320, 0.12, 'sine', 0.14); tone(1320, 1760, 0.12, 'sine', 0.10, 0.07); },
+        pop:   function(){ tone(300, 900, 0.14, 'square', 0.14); noiseBurst(0.12, 1800, 0.10); },
+        honk:  function(){ tone(340, 320, 0.16, 'square', 0.07); tone(270, 255, 0.16, 'square', 0.07, 0.02); },
+        splash:function(){ noiseBurst(0.45, 700, 0.25); tone(400, 90, 0.4, 'sine', 0.12); },
+        crash: function(){ noiseBurst(0.3, 900, 0.22); tone(220, 55, 0.45, 'sawtooth', 0.16); },
+        thud:  function(){ noiseBurst(0.18, 500, 0.18); tone(160, 60, 0.2, 'sine', 0.14); }
+      };
+
+      /* ---------------- Background music (synthesized, no files) ----------------
+         A looping arcade track built from oscillators + noise, scheduled
+         with a lookahead step sequencer on the same AudioContext as the
+         effects. One loop = 32 eighth-note steps over a C – Am – F – G
+         progression: pumping bass, a bright square-wave lead, kick, snare
+         and hats. Tempo is driven by the game's own speed value: the game
+         speed is declared further down (150 at the start of a run, rising
+         with score), so BPM = 132 × (speed / 150) — as the run gets faster,
+         the music speeds up in step, and a fresh run restarts at base tempo.
+         The music runs through its own gain node kept well under the effect
+         levels, and both the music toggle and the master mute can silence it
+         (the mute silences everything, effects included). */
+      var MUSIC_BASE_BPM = 132;
+      var MUSIC_BASE_SPEED = 150;
+      var musicOn = true;
+      var musicTimer = null, musicGainNode = null, musicNoiseBuf = null;
+      var musicStep = 0, musicNextTime = 0;
+      var MUSIC_ROOTS = [36, 33, 29, 31]; // C2, A1, F1, G1 (MIDI)
+      var MUSIC_BASS_PATTERN = [0, 0, 12, 0, 0, 12, 7, 12];
+      var MUSIC_LEAD = [
+        72, null, 76, 79,  76, null, 79, 84,
+        81, null, 79, 76,  79, null, 76, 72,
+        77, null, 81, 77,  84, 81, 77, null,
+        79, null, 83, 79,  86, 83, 79, 74
+      ];
+      function midiFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+      function musicAudibleGain(){ return (musicOn && !muted) ? 0.17 : 0; }
+      function ensureMusicGraph(){
+        var a = audio(); if(!a) return null;
+        if(!musicGainNode){
+          musicGainNode = a.createGain();
+          musicGainNode.gain.value = 0;
+          musicGainNode.connect(a.destination);
+        }
+        if(!musicNoiseBuf){
+          var n = Math.floor(a.sampleRate * 0.3);
+          musicNoiseBuf = a.createBuffer(1, n, a.sampleRate);
+          var d = musicNoiseBuf.getChannelData(0);
+          for(var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+        }
+        return a;
+      }
+      function refreshMusicGain(){
+        if(musicGainNode && actx){
+          musicGainNode.gain.setTargetAtTime(musicTimer ? musicAudibleGain() : 0, actx.currentTime, 0.03);
+        }
+      }
+      function musicNote(midi, t, dur, type, vol){
+        var o = actx.createOscillator(), g = actx.createGain();
+        o.type = type; o.frequency.value = midiFreq(midi);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(musicGainNode);
+        o.start(t); o.stop(t + dur + 0.03);
+      }
+      function musicNoise(t, dur, filterType, freq, vol){
+        var src = actx.createBufferSource(); src.buffer = musicNoiseBuf;
+        src.loop = true;
+        var f = actx.createBiquadFilter(); f.type = filterType; f.frequency.value = freq;
+        var g = actx.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        src.connect(f); f.connect(g); g.connect(musicGainNode);
+        src.start(t); src.stop(t + dur + 0.03);
+      }
+      function musicKick(t){
+        var o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(150, t);
+        o.frequency.exponentialRampToValueAtTime(45, t + 0.11);
+        g.gain.setValueAtTime(0.55, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+        o.connect(g); g.connect(musicGainNode);
+        o.start(t); o.stop(t + 0.16);
+      }
+      function playMusicStep(step, t){
+        var bar = Math.floor(step / 8) % 4;
+        var s = step % 8;
+        // drums: four-on-the-floor kick, snare on beats 2 & 4, hats off the beat
+        if(s % 2 === 0) musicKick(t);
+        if(s === 2 || s === 6) musicNoise(t, 0.11, 'bandpass', 1800, 0.20);
+        if(s % 2 === 1) musicNoise(t, 0.035, 'highpass', 7000, 0.07);
+        // bass: pumping eighth notes on the chord root
+        musicNote(MUSIC_ROOTS[bar] + MUSIC_BASS_PATTERN[s], t, 0.19, 'triangle', 0.34);
+        // lead: bright arcade melody
+        var lead = MUSIC_LEAD[step];
+        if(lead !== null && lead !== undefined) musicNote(lead, t, 0.21, 'square', 0.085);
+        // sparkle: echo the lead an octave up on the last step of each bar
+        if(s === 7 && lead !== null && lead !== undefined) musicNote(lead + 12, t, 0.16, 'square', 0.04);
+      }
+      function scheduleMusic(){
+        if(!actx || !musicGainNode) return;
+        while(musicNextTime < actx.currentTime + 0.14){
+          playMusicStep(musicStep, musicNextTime);
+          // Same multiplier the game uses: current speed over the base 150.
+          var bpm = MUSIC_BASE_BPM * ((typeof speed === 'number' ? speed : MUSIC_BASE_SPEED) / MUSIC_BASE_SPEED);
+          musicNextTime += 60 / bpm / 2; // eighth-note steps
+          musicStep = (musicStep + 1) % MUSIC_LEAD.length;
+        }
+      }
+      function startMusic(){
+        if(!musicOn) return;
+        var a = ensureMusicGraph(); if(!a) return;
+        if(musicTimer) { refreshMusicGain(); return; }
+        musicStep = 0;
+        musicNextTime = a.currentTime + 0.06;
+        musicGainNode.gain.setTargetAtTime(musicAudibleGain(), a.currentTime, 0.04);
+        musicTimer = setInterval(scheduleMusic, 25);
+        scheduleMusic();
+      }
+      function stopMusic(){
+        if(musicTimer){ clearInterval(musicTimer); musicTimer = null; }
+        if(musicGainNode && actx){
+          try{
+            musicGainNode.gain.cancelScheduledValues(actx.currentTime);
+            musicGainNode.gain.setTargetAtTime(0, actx.currentTime, 0.02);
+          }catch(e){}
+        }
+      }
+
+      /* ---------------- Game state ---------------- */
+      var state = 'ready'; // ready | playing | paused | over
+      var score = 0, pigs = 0, best = 0;
+      var speed = 150, dist = 0, time = 0;
+      var bird, segments, particles, clouds, nextX, segCount;
+      var standingLog = null;
+      var toastTimer = null;
+
+      var CAR_COLORS = ['#e8433c','#f5a623','#3f8ef7','#39b96a','#9b59d0','#f2f2f2','#ff7ab6'];
+      var SEG_TYPES = ['grass','road','grass','road','river','grass','road','river'];
+
+      function rand(a, b){ return a + Math.random() * (b - a); }
+      function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+      function makeSegment(x){
+        var type;
+        if(segCount < 2){ type = 'grass'; }
+        else { type = pick(SEG_TYPES); }
+        var w = Math.round(rand(240, 350));
+        var seg = { type: type, x: x, w: w, counted: false, cars: [], logs: [], tower: null, egg: null, trees: [] };
+        if(type === 'road'){
+          var n = w > 300 ? 3 : 2;
+          for(var i = 0; i < n; i++){
+            var dir = Math.random() < 0.5 ? 1 : -1;
+            seg.cars.push({
+              dx: rand(0, w - 70), w: Math.round(rand(62, 86)), h: 30,
+              dir: dir, vx: dir * rand(55, 135),
+              color: pick(CAR_COLORS), passed: false
+            });
+          }
+        }
+        if(type === 'river'){
+          var nl = w > 300 ? 2 : 1;
+          for(var j = 0; j < nl; j++){
+            seg.logs.push({ dx: (w / (nl + 1)) * (j + 1) - 55 + rand(-16, 16), w: Math.round(rand(95, 135)), drift: rand(-34, -14) });
+          }
+        }
+        if(type === 'grass'){
+          for(var t = 0; t < 3; t++){ seg.trees.push({ dx: rand(14, w - 30), s: rand(0.8, 1.25) }); }
+          if(segCount >= 2 && Math.random() < 0.55){
+            seg.tower = { dx: Math.round(rand(70, w - 110)), w: 46, h: Math.round(rand(64, 148)), pig: true };
+          }
+        }
+        if(segCount >= 1 && Math.random() < 0.4){
+          seg.egg = { dx: Math.round(rand(40, w - 40)), y: Math.round(rand(120, GROUND - 190)), taken: false, bob: rand(0, 6) };
+        }
+        segCount++;
+        return seg;
+      }
+
+      function reset(){
+        score = 0; pigs = 0; speed = 150; dist = 0; time = 0;
+        bird = { x: 104, y: VH * 0.40, vy: 0, r: 15, wing: 0, rot: 0 };
+        segments = []; particles = []; standingLog = null;
+        segCount = 0; nextX = -20;
+        while(nextX < VW + 420){
+          var s = makeSegment(nextX);
+          segments.push(s); nextX += s.w;
+        }
+        clouds = [];
+        for(var i = 0; i < 6; i++){ clouds.push({ x: rand(0, VW), y: rand(18, 170), s: rand(0.6, 1.3), v: rand(4, 10) }); }
+        updateHud();
+      }
+
+      function updateHud(){
+        hudScore.textContent = score;
+        hudPigs.textContent = pigs;
+        hudBest.textContent = best;
+      }
+
+      function toast(msg, dur){
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        if(toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, dur || 1300);
+      }
+
+      /* ---------------- Unlocks, skins & characters (device-only) ----------------
+         Paid state and promo-trial state live in SEPARATE storage keys, so a
+         promo expiring can never touch a paid unlock:
+           paid colors : fc_unlocked          (Stripe ?unlocked=success)
+           paid packs  : fc_pack1 .. fc_pack4 (Stripe ?packN=success)
+           promo trial : fc_fly_claimed / fc_fly_left  (FLYAWAY26, 60 min of play left)
+                         fc_get_claimed / fc_get_left  (GETMORE, 60 min of play left)
+                         fc_frog_claimed / fc_frog_left (FROG26, 30 min of play left)
+                         fc_bee_claimed / fc_bee_left   (BEE26, 30 min of play left)
+                         fc_ghost_claimed / fc_ghost_left (GHOST26, 30 min of play left)
+           promo master: fc_every_unlocked (EVERY26, permanent, separate from paid)
+         A timed promo grants access for its minutes of actual play time only —
+         time counts down solely inside update(), i.e. while a run is in
+         progress and the game is not paused. */
+      var SKINS = [
+        { name: 'Classic Red', body: '#e8433c', dark: '#c22f28', tail: '#8f1d18' },
+        { name: 'Ocean Blue',  body: '#2f7fe8', dark: '#1c5bb8', tail: '#174a8f' },
+        { name: 'Jungle Green', body: '#39b96a', dark: '#258a4a', tail: '#1d6e3a' },
+        { name: 'Sunset Gold', body: '#f5a623', dark: '#cf7f0d', tail: '#a86a08' }
+      ];
+      var PACKS = [null,
+        { name: 'Flying Pig & UFO Alien' },
+        { name: 'Frog & Penguin' },
+        { name: 'Dragon & Bee' },
+        { name: 'Robot & Ghost' }
+      ];
+      var PACK_LINKS = [null,
+        'https://buy.stripe.com/dRm3cu80c4tD3RG0dycAo0o',
+        'https://buy.stripe.com/6oU8wO2FSf8h0Fu8K4cAo0p',
+        'https://buy.stripe.com/4gM6oG0xK5xH73S4tOcAo0q',
+        'https://buy.stripe.com/9B69ASdkw8JTag4e4ocAo0r'
+      ];
+      var COLOR_LINK = 'https://buy.stripe.com/6oU5kCdkw9NXag48K4cAo0n';
+      var CHARACTERS = [
+        { id: 'pig',     name: 'Flying Pig',  pack: 1, dot: '#ff8fb8' },
+        { id: 'alien',   name: 'UFO Alien',   pack: 1, dot: '#57c84b' },
+        { id: 'frog',    name: 'Flying Frog', pack: 2, dot: '#4ecb5d' },
+        { id: 'penguin', name: 'Penguin',     pack: 2, dot: '#39424e' },
+        { id: 'dragon',  name: 'Fire Dragon', pack: 3, dot: '#3fae5a' },
+        { id: 'bee',     name: 'Bumblebee',   pack: 3, dot: '#f7c531' },
+        { id: 'robot',   name: 'Robot',       pack: 4, dot: '#aeb9c4' },
+        { id: 'ghost',   name: 'Ghost',       pack: 4, dot: '#eef2f7' }
+      ];
+      var PROMO_SECONDS = 3600; // 1 hour of play time
+      var PROMO_SECONDS_30 = 1800; // 30 minutes of play time
+      var paidUnlocked = false, skinIndex = 0, justUnlocked = false;
+      var packPaid = [false, false, false, false, false];
+      var justBoughtPack = 0;
+      var character = 'bird'; // 'bird' or a CHARACTERS id
+      var everyUnlocked = false; // EVERY26 master promo — permanent, separate from paid
+      // Promo trials. active = usable and counting down during play.
+      // pending = the time ran out mid-run: access lasts until the run ends,
+      // then finalizePromoExpiry() locks it for the next run.
+      var flyPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS };
+      var getPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS };
+      var frogPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      var beePromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      var ghostPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      var promoSaveTimer = 0;
+
+      function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+      function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+      function loadPromo(store, claimKey, leftKey){
+        store.claimed = lsGet(claimKey) === '1';
+        var left = parseFloat(lsGet(leftKey));
+        if(isNaN(left) || left < 0) left = 0;
+        var cap = store.dur || PROMO_SECONDS;
+        if(left > cap) left = cap;
+        store.left = left;
+        store.active = store.claimed && left > 0;
+      }
+      function savePromo(store, claimKey, leftKey){
+        if(store.claimed) lsSet(claimKey, '1');
+        lsSet(leftKey, String(Math.max(0, Math.ceil(store.left))));
+      }
+      function savePromos(){
+        savePromo(flyPromo, 'fc_fly_claimed', 'fc_fly_left');
+        savePromo(getPromo, 'fc_get_claimed', 'fc_get_left');
+        savePromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
+        savePromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
+        savePromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+      }
+
+      /* ----- load paid state + saved picks ----- */
+      paidUnlocked = lsGet('fc_unlocked') === '1';
+      for(var pn = 1; pn <= 4; pn++) packPaid[pn] = lsGet('fc_pack' + pn) === '1';
+      everyUnlocked = lsGet('fc_every_unlocked') === '1';
+      loadPromo(flyPromo, 'fc_fly_claimed', 'fc_fly_left');
+      loadPromo(getPromo, 'fc_get_claimed', 'fc_get_left');
+      loadPromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
+      loadPromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
+      loadPromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+      var savedSkin = parseInt(lsGet('fc_skin'), 10);
+      if(!isNaN(savedSkin) && savedSkin >= 0 && savedSkin < SKINS.length) skinIndex = savedSkin;
+      var savedChar = lsGet('fc_character');
+      if(savedChar) character = savedChar;
+
+      /* ----- access checks (paid OR live promo trial) ----- */
+      function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending; }
+      function packOn(n){
+        if(packPaid[n] || everyUnlocked) return true;
+        if(n === 1) return !!(getPromo.active || getPromo.pending);
+        if(n === 2) return !!(frogPromo.active || frogPromo.pending);
+        if(n === 3) return !!(beePromo.active || beePromo.pending);
+        if(n === 4) return !!(ghostPromo.active || ghostPromo.pending);
+        return false;
+      }
+      function charDef(id){
+        for(var i = 0; i < CHARACTERS.length; i++) if(CHARACTERS[i].id === id) return CHARACTERS[i];
+        return null;
+      }
+      function charOn(id){ var d = charDef(id); return !!d && packOn(d.pack); }
+      function validateSelection(){
+        if(character !== 'bird' && !charOn(character)){
+          character = 'bird';
+          lsSet('fc_character', 'bird');
+        }
+      }
+      validateSelection();
+
+      /* ----- Stripe return grants: ?unlocked=success and ?packN=success ----- */
+      try{
+        var params = new URLSearchParams(window.location.search);
+        var dirty = false;
+        if(params.get('unlocked') === 'success'){
+          if(!paidUnlocked){ paidUnlocked = true; justUnlocked = true; lsSet('fc_unlocked', '1'); }
+          params.delete('unlocked'); dirty = true;
+        }
+        for(var pk = 1; pk <= 4; pk++){
+          if(params.get('pack' + pk) === 'success'){
+            if(!packPaid[pk]){ packPaid[pk] = true; justBoughtPack = pk; lsSet('fc_pack' + pk, '1'); }
+            params.delete('pack' + pk); dirty = true;
+          }
+        }
+        if(dirty){
+          var qs = params.toString();
+          window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+        }
+      }catch(e){}
+
+      function currentSkin(){ return SKINS[colorsOn() ? skinIndex : 0]; }
+      function fmtLeft(sec){
+        var m = Math.ceil(sec / 60);
+        return m + (m === 1 ? ' min' : ' mins');
+      }
+      function refreshPromoTime(){
+        var parts = [];
+        if(everyUnlocked) parts.push('EVERY26: everything unlocked');
+        if(flyPromo.active && !flyPromo.pending) parts.push('FLYAWAY26 free time left: ' + fmtLeft(flyPromo.left) + ' of play');
+        if(getPromo.active && !getPromo.pending) parts.push('GETMORE free time left: ' + fmtLeft(getPromo.left) + ' of play');
+        if(frogPromo.active && !frogPromo.pending) parts.push('FROG26 free time left: ' + fmtLeft(frogPromo.left) + ' of play');
+        if(beePromo.active && !beePromo.pending) parts.push('BEE26 free time left: ' + fmtLeft(beePromo.left) + ' of play');
+        if(ghostPromo.active && !ghostPromo.pending) parts.push('GHOST26 free time left: ' + fmtLeft(ghostPromo.left) + ' of play');
+        var els = document.querySelectorAll('[data-promo-time]');
+        for(var i = 0; i < els.length; i++){
+          els[i].textContent = parts.join('  ·  ');
+          els[i].style.display = parts.length ? '' : 'none';
+        }
+      }
+
+      function applyUnlockUI(){
+        var blocks = document.querySelectorAll('[data-unlock-block]');
+        for(var i = 0; i < blocks.length; i++) blocks[i].style.display = paidUnlocked ? 'none' : '';
+        var lines = document.querySelectorAll('[data-unlocked-line]');
+        for(var j = 0; j < lines.length; j++) lines[j].style.display = paidUnlocked ? '' : 'none';
+        var pickers = document.querySelectorAll('[data-skin-picker]');
+        for(var k = 0; k < pickers.length; k++) pickers[k].classList.add('show');
+        var buys = document.querySelectorAll('[data-pack-buy]');
+        for(var u = 0; u < buys.length; u++){
+          var bn = parseInt(buys[u].getAttribute('data-pack-buy'), 10);
+          buys[u].style.display = packPaid[bn] ? 'none' : '';
+        }
+        var btns = document.querySelectorAll('.skin-btn');
+        for(var b = 0; b < btns.length; b++){
+          var kind = btns[b].getAttribute('data-kind');
+          var isSel = false;
+          if(kind === 'bird'){
+            var idx = parseInt(btns[b].getAttribute('data-skin'), 10);
+            btns[b].classList.toggle('locked', idx > 0 && !colorsOn());
+            isSel = (character === 'bird' && idx === skinIndex);
+          } else if(kind === 'char'){
+            var cid = btns[b].getAttribute('data-char');
+            btns[b].classList.toggle('locked', !charOn(cid));
+            isSel = (character === cid);
+          }
+          btns[b].classList.toggle('sel', isSel);
+        }
+        var offers = document.querySelectorAll('[data-offer]');
+        for(var o = 0; o < offers.length; o++) offers[o].style.display = 'none';
+        refreshPromoTime();
+      }
+      function makeOffer(picker){
+        var offer = document.createElement('div');
+        offer.className = 'offer-box';
+        offer.setAttribute('data-offer', '');
+        offer.style.display = 'none';
+        picker.appendChild(offer);
+        return offer;
+      }
+      function fillOffer(picker, title, desc, priceLine, href, btnText){
+        var offer = picker.querySelector('[data-offer]');
+        if(!offer) return;
+        offer.innerHTML = '';
+        var t = document.createElement('div');
+        t.className = 'offer-title'; t.textContent = title;
+        offer.appendChild(t);
+        var d = document.createElement('div');
+        d.className = 'offer-desc'; d.textContent = desc;
+        offer.appendChild(d);
+        var p = document.createElement('div');
+        p.className = 'offer-price'; p.textContent = priceLine;
+        offer.appendChild(p);
+        var a = document.createElement('a');
+        a.className = 'pack-buy'; a.href = href; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = btnText;
+        offer.appendChild(a);
+        var n = document.createElement('div');
+        n.className = 'pack-secure'; n.textContent = 'Secure checkout via Stripe';
+        offer.appendChild(n);
+        offer.style.display = '';
+        if(offer.scrollIntoView) offer.scrollIntoView({ block: 'nearest' });
+      }
+      function showPackOffer(picker, packNum){
+        var names = [];
+        for(var i = 0; i < CHARACTERS.length; i++) if(CHARACTERS[i].pack === packNum) names.push(CHARACTERS[i].name);
+        fillOffer(picker,
+          'Pack ' + packNum + ' \u2014 ' + PACKS[packNum].name,
+          'Play as the ' + names.join(' and the ') + ' \u2014 same flying, same moves, a whole new look.',
+          '$0.99 one-time \u00b7 permanent unlock, yours on this device forever',
+          PACK_LINKS[packNum],
+          'Get Pack ' + packNum + ' \u2014 $0.99 \u2014 Checkout with Stripe');
+      }
+      function showColorOffer(picker){
+        fillOffer(picker,
+          'Full Version \u2014 3 extra bird colors',
+          'Play as the bird in Ocean Blue, Jungle Green or Sunset Gold.',
+          '$0.99 one-time \u00b7 permanent unlock, yours on this device forever',
+          COLOR_LINK,
+          'Unlock all colors \u2014 $0.99 \u2014 Checkout with Stripe');
+      }
+      function revealPlay(picker){
+        if(!picker || !picker.parentNode) return;
+        var bar = picker.parentNode.querySelector('.playbar');
+        if(bar && bar.scrollIntoView){
+          setTimeout(function(){ bar.scrollIntoView({ block: 'nearest' }); }, 40);
+        }
+      }
+      function selectBird(idx, picker){
+        if(idx > 0 && !colorsOn()){
+          if(picker) showColorOffer(picker);
+          return;
+        }
+        character = 'bird';
+        skinIndex = idx;
+        lsSet('fc_skin', String(idx));
+        lsSet('fc_character', 'bird');
+        applyUnlockUI();
+        revealPlay(picker);
+      }
+      function selectCharacter(id, picker){
+        if(!charOn(id)){
+          var d = charDef(id);
+          if(d && picker) showPackOffer(picker, d.pack);
+          return;
+        }
+        character = id;
+        lsSet('fc_character', id);
+        applyUnlockUI();
+        revealPlay(picker);
+      }
+      function buildSkinPickers(){
+        var pickers = document.querySelectorAll('[data-skin-picker]');
+        for(var r = 0; r < pickers.length; r++){
+          (function(picker){
+            var row = picker.querySelector('.skin-row');
+            for(var i = 0; i < SKINS.length; i++){
+              (function(idx){
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'skin-btn';
+                btn.setAttribute('data-kind', 'bird');
+                btn.setAttribute('data-skin', idx);
+                btn.setAttribute('aria-label', 'Bird color: ' + SKINS[idx].name);
+                var dot = document.createElement('span');
+                dot.className = 'dot'; dot.style.background = SKINS[idx].body;
+                btn.appendChild(dot);
+                btn.appendChild(document.createTextNode(SKINS[idx].name));
+                btn.addEventListener('click', function(){ selectBird(idx, picker); });
+                row.appendChild(btn);
+              })(i);
+            }
+            for(var c = 0; c < CHARACTERS.length; c++){
+              (function(def){
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'skin-btn';
+                btn.setAttribute('data-kind', 'char');
+                btn.setAttribute('data-char', def.id);
+                btn.setAttribute('aria-label', 'Character: ' + def.name);
+                var dot = document.createElement('span');
+                dot.className = 'dot'; dot.style.background = def.dot;
+                btn.appendChild(dot);
+                btn.appendChild(document.createTextNode(def.name));
+                btn.addEventListener('click', function(){ selectCharacter(def.id, picker); });
+                row.appendChild(btn);
+              })(CHARACTERS[c]);
+            }
+            makeOffer(picker);
+          })(pickers[r]);
+        }
+      }
+
+      /* ---------------- Promo codes (device-only, timed play time) ---------------- */
+      function claimPromo(store, show, okText){
+        store.claimed = true;
+        store.left = store.dur || PROMO_SECONDS;
+        store.active = true;
+        store.pending = false;
+        savePromos();
+        applyUnlockUI();
+        show(okText, true);
+      }
+      function setupPromoForms(){
+        var forms = document.querySelectorAll('[data-promo-form]');
+        for(var f = 0; f < forms.length; f++){
+          (function(form){
+            var timeLine = document.createElement('div');
+            timeLine.className = 'promo-time';
+            timeLine.setAttribute('data-promo-time', '');
+            timeLine.style.display = 'none';
+            form.appendChild(timeLine);
+            form.addEventListener('submit', function(e){
+              e.preventDefault();
+              var input = form.querySelector('[data-promo-input]');
+              var msg = form.querySelector('[data-promo-msg]');
+              var code = (input.value || '').trim().toUpperCase();
+              function show(text, ok){
+                msg.textContent = text;
+                msg.className = 'promo-msg ' + (ok ? 'ok' : 'err');
+              }
+              if(code === 'EVERY26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else {
+                  everyUnlocked = true;
+                  lsSet('fc_every_unlocked', '1');
+                  applyUnlockUI();
+                  show('Everything unlocked! All bird colors and all 4 character packs are yours on this device.', true);
+                  if(input) input.value = '';
+                }
+              } else if(code === 'FLYAWAY26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(paidUnlocked){
+                  show('Full version already unlocked ✓', true);
+                } else if(flyPromo.active){
+                  show('Free hour already running — ' + fmtLeft(flyPromo.left) + ' of play left', true);
+                } else if(flyPromo.claimed){
+                  show("FLYAWAY26's free hour has already been used on this device", false);
+                } else {
+                  claimPromo(flyPromo, show, 'Free hour started! Bird colors unlocked for 60 minutes of play time.');
+                  if(input) input.value = '';
+                }
+              } else if(code === 'GETMORE'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(packPaid[1]){
+                  show('Pack 1 already yours — permanently ✓', true);
+                } else if(getPromo.active){
+                  show('Free hour already running — ' + fmtLeft(getPromo.left) + ' of play left', true);
+                } else if(getPromo.claimed){
+                  show("GETMORE's free hour has already been used on this device", false);
+                } else {
+                  claimPromo(getPromo, show, 'Free hour started! Flying Pig & UFO Alien unlocked for 60 minutes of play time.');
+                  if(input) input.value = '';
+                }
+              } else if(code === 'FROG26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(packPaid[2]){
+                  show('Pack 2 already yours — permanently ✓', true);
+                } else if(frogPromo.active){
+                  show('Free time already running — ' + fmtLeft(frogPromo.left) + ' of play left', true);
+                } else if(frogPromo.claimed){
+                  show("FROG26's free time has already been used on this device", false);
+                } else {
+                  claimPromo(frogPromo, show, 'Free time started! Frog & Penguin unlocked for 30 minutes of play time.');
+                  if(input) input.value = '';
+                }
+              } else if(code === 'BEE26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(packPaid[3]){
+                  show('Pack 3 already yours — permanently ✓', true);
+                } else if(beePromo.active){
+                  show('Free time already running — ' + fmtLeft(beePromo.left) + ' of play left', true);
+                } else if(beePromo.claimed){
+                  show("BEE26's free time has already been used on this device", false);
+                } else {
+                  claimPromo(beePromo, show, 'Free time started! Dragon & Bee unlocked for 30 minutes of play time.');
+                  if(input) input.value = '';
+                }
+              } else if(code === 'GHOST26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(packPaid[4]){
+                  show('Pack 4 already yours — permanently ✓', true);
+                } else if(ghostPromo.active){
+                  show('Free time already running — ' + fmtLeft(ghostPromo.left) + ' of play left', true);
+                } else if(ghostPromo.claimed){
+                  show("GHOST26's free time has already been used on this device", false);
+                } else {
+                  claimPromo(ghostPromo, show, 'Free time started! Robot & Ghost unlocked for 30 minutes of play time.');
+                  if(input) input.value = '';
+                }
+              } else {
+                show("That code isn't valid — try again", false);
+              }
+            });
+          })(forms[f]);
+        }
+      }
+
+      /* Promo play-time countdown — called only from update(), so time
+         passes only while a run is in progress and unpaused. */
+      function tickPromo(store, dt){
+        if(!store.active || store.pending) return;
+        store.left -= dt;
+        if(store.left <= 0){
+          store.left = 0;
+          store.pending = true; // run in progress keeps its pick; locks at run end
+          savePromos();
+          toast('⏳ Your free time is up — this run finishes with your pick', 2800);
+        }
+      }
+      function tickPromos(dt){
+        tickPromo(flyPromo, dt);
+        tickPromo(getPromo, dt);
+        tickPromo(frogPromo, dt);
+        tickPromo(beePromo, dt);
+        tickPromo(ghostPromo, dt);
+        promoSaveTimer += dt;
+        if(promoSaveTimer >= 1){
+          promoSaveTimer = 0;
+          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active){ savePromos(); refreshPromoTime(); }
+        }
+      }
+      /* Called when a run ends: any promo whose time ran out mid-run now locks. */
+      function finalizePromoExpiry(){
+        var ended = false;
+        if(flyPromo.pending){ flyPromo.pending = false; flyPromo.active = false; ended = true; }
+        if(getPromo.pending){ getPromo.pending = false; getPromo.active = false; ended = true; }
+        if(frogPromo.pending){ frogPromo.pending = false; frogPromo.active = false; ended = true; }
+        if(beePromo.pending){ beePromo.pending = false; beePromo.active = false; ended = true; }
+        if(ghostPromo.pending){ ghostPromo.pending = false; ghostPromo.active = false; ended = true; }
+        if(ended){
+          savePromos();
+          validateSelection();
+          applyUnlockUI();
+          toast('Your free time is up — extras are locked again', 2600);
+        }
+      }
+
+      /* ---------------- Leaderboard, player name, challenges & sharing ----------------
+         Scores live in a shared Firebase Realtime Database at /scores. Only a
+         display name and scores are shared — paid unlocks and promo trials
+         stay device-only, exactly as before. Everything here fails soft: if
+         Firebase can't be reached the game still plays fully and the board
+         falls back to the local best with a note. */
+      var firebaseConfig = {
+        apiKey: "AIzaSyBpROM-Jk6p3QbvF8casWHiGn-W6uuMqG4",
+        authDomain: "jos-apps-scores.firebaseapp.com",
+        databaseURL: "https://jos-apps-scores-default-rtdb.firebaseio.com",
+        projectId: "jos-apps-scores",
+        storageBucket: "jos-apps-scores.firebasestorage.app",
+        messagingSenderId: "208768682069",
+        appId: "1:208768682069:web:87c29118a29114929d6cdc"
+      };
+      var db = null;
+      try{
+        if(window.firebase && firebase.initializeApp && firebase.database){
+          firebase.initializeApp(firebaseConfig);
+          db = firebase.database();
+        }
+      }catch(e){ db = null; }
+
+      var playerName = (lsGet('fc_player_name') || '').slice(0, 20);
+      var lastScore = 0;      // most recent finished run
+      var lbList = null;      // last fetched top-10 (null = board unavailable)
+      var challenge = null;   // { name, score } from a ?c=&s= link
+      try{
+        var cParams = new URLSearchParams(window.location.search);
+        var cName = cParams.get('c');
+        var cScore = parseInt(cParams.get('s'), 10);
+        if(cName && !isNaN(cScore) && cScore >= 0){
+          challenge = { name: String(cName).slice(0, 20), score: Math.min(cScore, 100000) };
+        }
+      }catch(e){}
+
+      function todayStr(){
+        var d = new Date();
+        function p2(n){ return (n < 10 ? '0' : '') + n; }
+        return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+      }
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      function fmtDate(dstr){
+        if(!dstr) return '';
+        var p = String(dstr).split('-');
+        if(p.length !== 3) return String(dstr);
+        var mo = parseInt(p[1], 10), dy = parseInt(p[2], 10);
+        if(!MONTHS[mo - 1] || isNaN(dy)) return String(dstr);
+        return MONTHS[mo - 1] + ' ' + dy;
+      }
+      function setAllText(sel, text){
+        var els = document.querySelectorAll(sel);
+        for(var i = 0; i < els.length; i++) els[i].textContent = text;
+      }
+      function renderLbRows(){
+        var boxes = document.querySelectorAll('[data-lb-rows]');
+        for(var b = 0; b < boxes.length; b++){
+          var box = boxes[b];
+          box.innerHTML = '';
+          if(!lbList || !lbList.length){
+            var em = document.createElement('div');
+            em.className = 'lb-empty';
+            em.textContent = lbList
+              ? 'No scores yet — set the first one!'
+              : ('Your best on this device: ' + best);
+            box.appendChild(em);
+            continue;
+          }
+          for(var i = 0; i < lbList.length; i++){
+            var e = lbList[i];
+            var row = document.createElement('div');
+            row.className = 'lb-row' + (playerName && e.name.toLowerCase() === playerName.toLowerCase() ? ' me' : '');
+            var rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = (i + 1) + '.';
+            var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = e.name;
+            var sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = e.score;
+            var dt = document.createElement('span'); dt.className = 'dt'; dt.textContent = fmtDate(e.date);
+            row.appendChild(rk); row.appendChild(nm); row.appendChild(sc); row.appendChild(dt);
+            box.appendChild(row);
+          }
+        }
+      }
+      function lbFail(){
+        lbList = null;
+        renderLbRows();
+        setAllText('[data-lb-status]', "Couldn't load the leaderboard — showing your local best instead.");
+      }
+      function fetchLeaderboard(){
+        if(!db){ lbFail(); return; }
+        setAllText('[data-lb-status]', 'Loading scores…');
+        var done = false;
+        var timer = setTimeout(function(){ if(!done){ done = true; lbFail(); } }, 9000);
+        db.ref('scores').once('value').then(function(snap){
+          if(done) return;
+          done = true; clearTimeout(timer);
+          var val = snap.val() || {};
+          var byName = {};
+          var keys = Object.keys(val);
+          for(var i = 0; i < keys.length; i++){
+            var e = val[keys[i]];
+            if(!e || typeof e.score !== 'number' || !isFinite(e.score)) continue;
+            var nm = String(e.name == null ? 'Player' : e.name).slice(0, 20);
+            if(!nm) nm = 'Player';
+            var key = nm.toLowerCase();
+            var clean = { name: nm, score: Math.max(0, Math.floor(e.score)), date: e.date || '' };
+            if(!byName[key] || clean.score > byName[key].score) byName[key] = clean;
+          }
+          var list = [];
+          for(var k in byName){ if(Object.prototype.hasOwnProperty.call(byName, k)) list.push(byName[k]); }
+          list.sort(function(a, b2){ return b2.score - a.score; });
+          lbList = list.slice(0, 10);
+          renderLbRows();
+          setAllText('[data-lb-status]', lbList.length ? "Live board — every player's best score." : 'No scores yet — set the first one!');
+        }).catch(function(){
+          if(!done){ done = true; clearTimeout(timer); lbFail(); }
+        });
+      }
+      function submitScore(sc){
+        if(!db){
+          setAllText('[data-submit-line]', 'Leaderboard unreachable — your best is saved on this device.');
+          return;
+        }
+        setAllText('[data-submit-line]', 'Posting your new best…');
+        db.ref('scores').push({ name: playerName || 'Player', score: sc, date: todayStr() }).then(function(){
+          setAllText('[data-submit-line]', '🏆 New best posted to the live leaderboard!');
+          fetchLeaderboard();
+        }).catch(function(){
+          setAllText('[data-submit-line]', "Couldn't post that score — the leaderboard didn't answer.");
+        });
+      }
+      /* Called from gameOver: challenge result, send-back button, score post. */
+      function onRunFinished(isNewBest){
+        lastScore = score;
+        var resultText = '', beat = false;
+        if(challenge){
+          if(score > challenge.score){
+            resultText = '🎉 You beat ' + challenge.name + "'s " + challenge.score + ' — send your score back!';
+            beat = true;
+          } else {
+            resultText = 'Target was ' + challenge.name + "'s " + challenge.score + ' — you got ' + score + '. So close!';
+          }
+        }
+        setAllText('[data-challenge-result]', resultText);
+        var sendBtns = document.querySelectorAll('[data-sendback]');
+        for(var i = 0; i < sendBtns.length; i++) sendBtns[i].style.display = beat ? '' : 'none';
+        if(isNewBest && score > 0) submitScore(score);
+        else { setAllText('[data-submit-line]', ''); fetchLeaderboard(); }
+      }
+
+      /* ----- share / challenge links -----
+         Links point at the game's public page, so a friend who opens one
+         lands on the real game with the challenge attached. When the game
+         is served from a real public host (for example GitHub Pages), the
+         share base is the page's own public address (origin + pathname).
+         Inside Muse's sandboxed frame the page address is an internal
+         gateway, not the public link, so fall back to the hardcoded Muse
+         public URL there. */
+      var SHARE_FALLBACK = 'https://muse.ai/s/flappy-crossroads-mv6xlkxaxtuxjkxe/EWrLid5GgKfVsTq-pphEtDZitkuvPV6vD-69smKCwGQ';
+      function resolveShareBase(){
+        try{
+          var loc = window.location;
+          if(!loc || (loc.protocol !== 'http:' && loc.protocol !== 'https:')) return SHARE_FALLBACK;
+          if(!loc.origin || loc.origin === 'null' || !loc.pathname) return SHARE_FALLBACK;
+          var host = loc.hostname || '';
+          if(!host || host === 'localhost' || host === '127.0.0.1' || host === '::1') return SHARE_FALLBACK;
+          // The Muse daemon serves the artifact under a /spaces/ route.
+          if(loc.pathname.indexOf('/spaces/') !== -1) return SHARE_FALLBACK;
+          if(host.indexOf('gateway') !== -1 || host.slice(-9) === '.internal') return SHARE_FALLBACK;
+          // Muse runs the artifact inside a cross-origin sandboxed frame:
+          // window.top exists but reading its location throws. A page opened
+          // directly from a real public host is top-level (or same-origin
+          // framed), so its own address is the shareable one.
+          try{
+            if(window.self !== window.top){
+              void window.top.location.href;
+            }
+          }catch(e){
+            return SHARE_FALLBACK;
+          }
+          return loc.origin + loc.pathname;
+        }catch(e){
+          return SHARE_FALLBACK;
+        }
+      }
+      var SHARE_BASE = resolveShareBase();
+      function buildShareLink(sc){
+        return SHARE_BASE + '?c=' + encodeURIComponent(playerName || 'Player') + '&s=' + encodeURIComponent(sc);
+      }
+      function legacyCopy(text){
+        try{
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0'; ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          ta.setSelectionRange(0, text.length);
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return !!ok;
+        }catch(e){ return false; }
+      }
+      function copyLink(text){
+        function showOk(){ toast('🔗 Link copied — send it to a friend!', 2400); }
+        function showFail(){ setAllText('[data-share-msg]', 'Copy this link: ' + text); }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(showOk, function(){
+            if(legacyCopy(text)) showOk(); else showFail();
+          });
+        } else if(legacyCopy(text)){ showOk(); }
+        else showFail();
+      }
+      function wireShareButtons(){
+        var cBtns = document.querySelectorAll('[data-challenge-btn]');
+        for(var i = 0; i < cBtns.length; i++){
+          cBtns[i].addEventListener('click', function(){
+            var sc = Math.max(best, lastScore);
+            if(sc <= 0){ toast('Fly a run first — then challenge a friend with your score!', 2600); return; }
+            setAllText('[data-share-msg]', '');
+            copyLink(buildShareLink(sc));
+          });
+        }
+        var sBtns = document.querySelectorAll('[data-share-btn]');
+        for(var j = 0; j < sBtns.length; j++){
+          sBtns[j].addEventListener('click', function(){
+            if(best <= 0){ toast('No best score yet — fly a run first!', 2400); return; }
+            setAllText('[data-share-msg]', '');
+            copyLink(buildShareLink(best));
+          });
+        }
+        var bBtns = document.querySelectorAll('[data-sendback]');
+        for(var k = 0; k < bBtns.length; k++){
+          bBtns[k].addEventListener('click', function(){
+            setAllText('[data-share-msg]', '');
+            copyLink(buildShareLink(lastScore));
+          });
+        }
+      }
+      function initSocial(){
+        var forms = document.querySelectorAll('[data-name-form]');
+        for(var f = 0; f < forms.length; f++){
+          (function(form){
+            var input = form.querySelector('[data-name-input]');
+            var msg = form.querySelector('[data-name-msg]');
+            if(playerName){
+              input.value = playerName;
+              msg.textContent = 'Playing as ' + playerName;
+            }
+            form.addEventListener('submit', function(e){
+              e.preventDefault();
+              var v = (input.value || '').trim().slice(0, 20);
+              if(!v){ msg.textContent = 'Type a name first — it shows on the leaderboard.'; return; }
+              playerName = v;
+              input.value = v;
+              lsSet('fc_player_name', v);
+              msg.textContent = "Saved — you're " + v + ' on the leaderboard ✓';
+              renderLbRows();
+            });
+          })(forms[f]);
+        }
+        if(challenge){
+          var banners = document.querySelectorAll('[data-challenge-banner]');
+          for(var b = 0; b < banners.length; b++){
+            banners[b].textContent = '🏆 ' + challenge.name + ' challenges you: beat ' + challenge.score + '!';
+            banners[b].style.display = '';
+          }
+        }
+        var refreshBtns = document.querySelectorAll('[data-lb-refresh]');
+        for(var r = 0; r < refreshBtns.length; r++) refreshBtns[r].addEventListener('click', fetchLeaderboard);
+        wireShareButtons();
+        fetchLeaderboard();
+      }
+
+      /* ---------------- Flow ---------------- */
+      function startGame(){
+        reset();
+        state = 'playing';
+        startOverlay.classList.add('hidden');
+        overOverlay.classList.add('hidden');
+        pausedTag.classList.remove('show');
+        flapBtn.classList.add('on');
+        audio();
+        startMusic();
+        flap();
+      }
+      function flap(){
+        if(state !== 'playing') return;
+        bird.vy = -435;
+        standingLog = null;
+        bird.wing = 1;
+        sfx.flap();
+        spawnParticles(bird.x - 10, bird.y + 10, 3, '#ffffff', 60, 0.35);
+      }
+      function togglePause(){
+        if(state === 'playing'){
+          state = 'paused';
+          stopMusic();
+          pausedTag.classList.add('show');
+          document.getElementById('pauseBtn').textContent = '▶';
+        } else if(state === 'paused'){
+          state = 'playing';
+          pausedTag.classList.remove('show');
+          document.getElementById('pauseBtn').textContent = '⏸';
+          startMusic();
+        }
+      }
+      function gameOver(reason, title){
+        if(state !== 'playing') return;
+        state = 'over';
+        stopMusic();
+        finalizePromoExpiry();
+        flapBtn.classList.remove('on');
+        var isNewBest = score > best;
+        if(isNewBest) best = score;
+        updateHud();
+        document.getElementById('overTitle').textContent = title;
+        document.getElementById('overReason').textContent = reason;
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('finalPigs').textContent = pigs;
+        document.getElementById('finalBest').textContent = best;
+        var medal = '';
+        if(score >= 50) medal = '🏆 Platinum — traffic fears YOU now';
+        else if(score >= 35) medal = '🥇 Gold crosser';
+        else if(score >= 20) medal = '🥈 Silver crosser';
+        else if(score >= 10) medal = '🥉 Bronze crosser';
+        document.getElementById('medalLine').textContent = medal;
+        onRunFinished(isNewBest);
+        setTimeout(function(){ overOverlay.classList.remove('hidden'); }, 550);
+      }
+
+      /* ---------------- Particles ---------------- */
+      function spawnParticles(x, y, n, color, spread, life){
+        for(var i = 0; i < n; i++){
+          particles.push({
+            x: x, y: y, vx: rand(-spread, spread), vy: rand(-spread, spread * 0.4),
+            life: life * rand(0.6, 1.1), max: life, color: color, r: rand(2, 4.5)
+          });
+        }
+      }
+
+      /* ---------------- Update ---------------- */
+      function circleRect(cx, cy, r, rx, ry, rw, rh){
+        var nx = Math.max(rx, Math.min(cx, rx + rw));
+        var ny = Math.max(ry, Math.min(cy, ry + rh));
+        var dx = cx - nx, dy = cy - ny;
+        return (dx * dx + dy * dy) < r * r;
+      }
+      function segAt(x){
+        for(var i = 0; i < segments.length; i++){
+          var s = segments[i];
+          if(x >= s.x && x < s.x + s.w) return s;
+        }
+        return null;
+      }
+
+      function update(dt){
+        time += dt;
+        tickPromos(dt);
+        speed = Math.min(150 + score * 2.4, 268);
+        dist += speed * dt;
+        var shift = speed * dt;
+
+        // scroll world
+        for(var i = 0; i < segments.length; i++){
+          var s = segments[i];
+          s.x -= shift;
+          if(!s.counted && s.x + s.w < bird.x){
+            s.counted = true; score++; updateHud();
+          }
+          var k;
+          for(k = 0; k < s.cars.length; k++){
+            var c = s.cars[k];
+            c.dx += c.vx * dt;
+            if(c.dx > s.w + 16) c.dx = -c.w - 16;
+            if(c.dx + c.w < -16) c.dx = s.w + 16;
+          }
+          for(k = 0; k < s.logs.length; k++){
+            var lg = s.logs[k];
+            lg.dx += lg.drift * dt;
+            if(lg.dx + lg.w < -8) lg.dx = s.w + 8 - lg.w;
+            if(lg.dx > s.w + 8) lg.dx = -8;
+          }
+        }
+        while(segments.length && segments[0].x + segments[0].w < -60) segments.shift();
+        var last = segments[segments.length - 1];
+        while(last.x + last.w < VW + 420){
+          var ns = makeSegment(last.x + last.w);
+          segments.push(ns); last = ns;
+        }
+        for(var ci = 0; ci < clouds.length; ci++){
+          clouds[ci].x -= clouds[ci].v * dt;
+          if(clouds[ci].x < -70){ clouds[ci].x = VW + 40; clouds[ci].y = rand(18, 170); }
+        }
+
+        // bird physics
+        if(standingLog){
+          var still = false;
+          for(var li = 0; li < segments.length; li++){
+            var rs = segments[li];
+            if(rs.type !== 'river') continue;
+            for(var lj = 0; lj < rs.logs.length; lj++){
+              var log = rs.logs[lj];
+              var lx = rs.x + log.dx;
+              if(standingLog === log && bird.x > lx - 4 && bird.x < lx + log.w + 4){
+                bird.y = WATER_TOP - 12 - bird.r + 2;
+                bird.vy = 0; still = true;
+              }
+            }
+          }
+          if(!still){ standingLog = null; }
+        }
+        if(!standingLog){
+          bird.vy = Math.min(bird.vy + 1500 * dt, 640);
+          bird.y += bird.vy * dt;
+        }
+        if(bird.y < bird.r){ bird.y = bird.r; bird.vy = Math.max(bird.vy, 0); }
+        bird.rot = Math.max(-0.35, Math.min(1.15, bird.vy / 620));
+        bird.wing = Math.max(0, bird.wing - dt * 6);
+
+        var bx = bird.x, by = bird.y, br = bird.r;
+        var bottom = by + br;
+
+        // eggs
+        for(var ei = 0; ei < segments.length; ei++){
+          var es = segments[ei];
+          if(es.egg && !es.egg.taken){
+            var ex = es.x + es.egg.dx, ey = es.egg.y + Math.sin(time * 2.4 + es.egg.bob) * 5;
+            var edx = bx - ex, edy = by - ey;
+            if(edx * edx + edy * edy < 34 * 34){
+              es.egg.taken = true; score += 3; updateHud();
+              toast('🥚 Golden egg +3');
+              sfx.egg();
+              spawnParticles(ex, ey, 10, '#ffd76a', 90, 0.5);
+            }
+          }
+        }
+
+        // cars: collision + near miss
+        for(var ai = 0; ai < segments.length; ai++){
+          var as = segments[ai];
+          for(var aj = 0; aj < as.cars.length; aj++){
+            var car = as.cars[aj];
+            var carX = as.x + car.dx, carY = GROUND - car.h;
+            if(circleRect(bx, by, br - 2, carX, carY, car.w, car.h)){
+              spawnParticles(bx, by, 16, '#e8433c', 150, 0.6);
+              sfx.crash();
+              gameOver('You clipped a car. The driver is fine. You are feathers.', 'Splat!');
+              return;
+            }
+            if(!car.passed && carX + car.w < bx){
+              car.passed = true;
+              var gap = carY - bottom;
+              if(gap > -2 && gap < 52){
+                score++; updateHud();
+                toast('🚗 Near miss +1');
+                sfx.honk();
+              }
+            }
+          }
+        }
+
+        // towers
+        for(var ti = 0; ti < segments.length; ti++){
+          var ts = segments[ti];
+          if(!ts.tower) continue;
+          var tw = ts.tower, tx = ts.x + tw.dx, tTop = GROUND - tw.h;
+          if(circleRect(bx, by, br - 2, tx, tTop, tw.w, tw.h)){
+            var stomp = bird.vy > 40 && (bottom - tTop) < 16 && bx > tx - 4 && bx < tx + tw.w + 4;
+            if(stomp){
+              if(tw.pig){
+                tw.pig = false; pigs++; score += 5; updateHud();
+                toast('🐷 Pig popped +5');
+                sfx.pop();
+                spawnParticles(bx, tTop - 6, 14, '#57c84b', 130, 0.55);
+              } else {
+                sfx.thud();
+                spawnParticles(bx, tTop, 8, '#b07a3f', 110, 0.45);
+              }
+              tw.h -= 46;
+              if(tw.h < 26) ts.tower = null;
+              bird.vy = -395;
+              bird.y = tTop - br - 2;
+            } else {
+              spawnParticles(bx, by, 14, '#b07a3f', 140, 0.55);
+              sfx.crash();
+              gameOver('Straight into the pig tower. The pigs send their regards.', 'Timber!');
+              return;
+            }
+          }
+        }
+
+        // ground / water / logs
+        var under = segAt(bx);
+        if(under && bottom >= WATER_TOP - 10 && under.type === 'river'){
+          var onLog = null;
+          for(var oi = 0; oi < under.logs.length; oi++){
+            var ol = under.logs[oi], olx = under.x + ol.dx;
+            if(bx > olx - 2 && bx < olx + ol.w + 2 && bird.vy >= 0 && bottom >= WATER_TOP - 14 && bottom <= WATER_TOP + 8){
+              onLog = ol;
+            }
+          }
+          if(onLog){
+            if(!standingLog){ spawnParticles(bx, WATER_TOP - 8, 5, '#ffffff', 60, 0.3); }
+            standingLog = onLog;
+            bird.y = WATER_TOP - 12 - br + 2;
+            bird.vy = 0;
+          } else if(bottom >= WATER_TOP + 2){
+            spawnParticles(bx, WATER_TOP, 18, '#5db9f5', 130, 0.6);
+            sfx.splash();
+            gameOver('Splashdown. Birds fly, they don\'t swim.', 'Splash!');
+            return;
+          }
+        } else if(bottom >= GROUND){
+          if(standingLog){ standingLog = null; }
+          spawnParticles(bx, GROUND, 14, '#e8433c', 130, 0.55);
+          sfx.thud();
+          gameOver(under && under.type === 'road'
+            ? 'You landed in traffic. Bold choice.'
+            : 'You met the ground at speed. The ground won.', 'Thud!');
+          return;
+        }
+
+        // particles
+        for(var pi = particles.length - 1; pi >= 0; pi--){
+          var p = particles[pi];
+          p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt;
+          if(p.life <= 0) particles.splice(pi, 1);
+        }
+      }
+
+      /* ---------------- Drawing ---------------- */
+      function rr(x, y, w, h, r){
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+      function drawCloud(x, y, s){
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.beginPath();
+        ctx.arc(x, y, 16 * s, 0, 7); ctx.arc(x + 18 * s, y - 6 * s, 20 * s, 0, 7);
+        ctx.arc(x + 38 * s, y, 15 * s, 0, 7); ctx.arc(x + 19 * s, y + 6 * s, 18 * s, 0, 7);
+        ctx.fill();
+      }
+      function drawTree(x, s){
+        ctx.fillStyle = '#8a5a2b';
+        ctx.fillRect(x - 3 * s, GROUND - 16 * s, 6 * s, 16 * s);
+        ctx.fillStyle = '#2f9e4f';
+        ctx.beginPath();
+        ctx.arc(x, GROUND - 30 * s, 15 * s, 0, 7);
+        ctx.arc(x - 11 * s, GROUND - 20 * s, 10 * s, 0, 7);
+        ctx.arc(x + 11 * s, GROUND - 20 * s, 10 * s, 0, 7);
+        ctx.fill();
+      }
+      function drawCar(x, y, car){
+        var w = car.w, h = car.h;
+        ctx.save();
+        if(car.dir < 0){ ctx.translate(x + w, y); ctx.scale(-1, 1); x = 0; y = 0; }
+        else { ctx.translate(x, y); x = 0; y = 0; }
+        ctx.fillStyle = car.color;
+        rr(x, y + 8, w, h - 8, 7); ctx.fill();
+        rr(x + w * 0.18, y, w * 0.52, 14, 6); ctx.fill();
+        ctx.fillStyle = '#bfe6ff';
+        rr(x + w * 0.24, y + 3, w * 0.17, 9, 3); ctx.fill();
+        rr(x + w * 0.46, y + 3, w * 0.17, 9, 3); ctx.fill();
+        ctx.fillStyle = '#ffd76a';
+        ctx.beginPath(); ctx.arc(x + w - 4, y + 15, 3.4, 0, 7); ctx.fill();
+        ctx.fillStyle = '#22252b';
+        ctx.beginPath(); ctx.arc(x + 13, y + h, 6.5, 0, 7); ctx.arc(x + w - 13, y + h, 6.5, 0, 7); ctx.fill();
+        ctx.fillStyle = '#9aa3ad';
+        ctx.beginPath(); ctx.arc(x + 13, y + h, 2.6, 0, 7); ctx.arc(x + w - 13, y + h, 2.6, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawLog(x, w){
+        var y = WATER_TOP - 12;
+        ctx.fillStyle = '#9c6a35';
+        rr(x, y, w, 14, 7); ctx.fill();
+        ctx.fillStyle = '#7c5226';
+        ctx.beginPath(); ctx.ellipse(x + 8, y + 7, 5, 6, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + w - 8, y + 7, 5, 6, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x + 16, y + 4); ctx.lineTo(x + w - 16, y + 4); ctx.stroke();
+      }
+      function drawTower(seg){
+        var tw = seg.tower; if(!tw) return;
+        var x = seg.x + tw.dx, crate = 23;
+        var rows = Math.ceil(tw.h / crate);
+        for(var rI = 0; rI < rows; rI++){
+          var cy = GROUND - (rI + 1) * crate;
+          var hh = Math.min(crate, tw.h - rI * crate);
+          ctx.fillStyle = rI % 2 ? '#c98d4b' : '#bd813d';
+          ctx.fillRect(x, cy + (crate - hh), tw.w, hh);
+          ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 2.5;
+          ctx.strokeRect(x + 1, cy + (crate - hh) + 1, tw.w - 2, hh - 2);
+          ctx.beginPath();
+          ctx.moveTo(x + 3, cy + (crate - hh) + 3); ctx.lineTo(x + tw.w - 3, cy + crate - 3);
+          ctx.moveTo(x + tw.w - 3, cy + (crate - hh) + 3); ctx.lineTo(x + 3, cy + crate - 3);
+          ctx.stroke();
+        }
+        if(tw.pig){
+          var px = x + tw.w / 2, py = GROUND - tw.h - 11;
+          ctx.fillStyle = '#57c84b';
+          ctx.beginPath(); ctx.arc(px, py, 12.5, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(px - 8, py - 9, 4, 0, 7); ctx.arc(px + 8, py - 9, 4, 0, 7); ctx.fill();
+          ctx.fillStyle = '#3f9e35';
+          ctx.beginPath(); ctx.ellipse(px, py + 1, 6.5, 5, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = '#2c6e24';
+          ctx.beginPath(); ctx.arc(px - 2.4, py + 1, 1.4, 0, 7); ctx.arc(px + 2.4, py + 1, 1.4, 0, 7); ctx.fill();
+          ctx.fillStyle = '#17351a';
+          ctx.beginPath(); ctx.arc(px - 5, py - 4, 1.7, 0, 7); ctx.arc(px + 5, py - 4, 1.7, 0, 7); ctx.fill();
+        }
+      }
+      function drawBird(){
+        var skin = currentSkin();
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.55);
+        // tail
+        ctx.fillStyle = skin.tail;
+        ctx.beginPath();
+        ctx.moveTo(-13, -2); ctx.lineTo(-22, -7); ctx.lineTo(-20, 1); ctx.lineTo(-22, 6); ctx.lineTo(-13, 5);
+        ctx.closePath(); ctx.fill();
+        // body
+        ctx.fillStyle = skin.body;
+        ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.fill();
+        // belly
+        ctx.fillStyle = '#fdeeda';
+        ctx.beginPath(); ctx.ellipse(3, 7, 8.5, 6, 0, 0, 7); ctx.fill();
+        // crest
+        ctx.strokeStyle = skin.dark; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-3, -13); ctx.lineTo(-5, -20); ctx.moveTo(2, -14); ctx.lineTo(3, -21); ctx.stroke();
+        // wing
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        ctx.save();
+        ctx.translate(-4, 1); ctx.rotate(flapA);
+        ctx.fillStyle = skin.dark;
+        ctx.beginPath(); ctx.ellipse(-6, 3, 9.5, 5.5, 0.5, 0, 7); ctx.fill();
+        ctx.restore();
+        // beak
+        ctx.fillStyle = '#f7b731';
+        ctx.beginPath();
+        ctx.moveTo(11, -2); ctx.lineTo(21, 1); ctx.lineTo(11, 5); ctx.closePath(); ctx.fill();
+        // angry eyebrow + eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(7, -5, 4.6, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1c2733';
+        ctx.beginPath(); ctx.arc(8.4, -5, 2.2, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#1c2733'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(1, -11); ctx.lineTo(12, -8); ctx.stroke();
+        ctx.restore();
+      }
+      function drawPig(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.55);
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        // curly tail
+        ctx.strokeStyle = '#e86a9a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(-17, -1, 3.4, 0.6, 5.2); ctx.stroke();
+        // wing (behind body, flapping)
+        ctx.save();
+        ctx.translate(-3, -6); ctx.rotate(-flapA * 0.9 - 0.25);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.ellipse(-7, -6, 11, 5.5, -0.55, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(232,106,154,.55)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.ellipse(-7, -6, 11, 5.5, -0.55, 0, 7); ctx.stroke();
+        ctx.restore();
+        // ears
+        ctx.fillStyle = '#f27aa5';
+        ctx.beginPath(); ctx.moveTo(-9, -11); ctx.lineTo(-11, -18); ctx.lineTo(-4, -14); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(3, -13); ctx.lineTo(4, -20); ctx.lineTo(9, -14); ctx.closePath(); ctx.fill();
+        // body
+        ctx.fillStyle = '#ff9ec2';
+        ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.fill();
+        // belly
+        ctx.fillStyle = '#ffd3e4';
+        ctx.beginPath(); ctx.ellipse(2, 7, 8.5, 5.5, 0, 0, 7); ctx.fill();
+        // little trotters
+        ctx.fillStyle = '#f27aa5';
+        ctx.beginPath(); ctx.ellipse(-5, 14, 3.6, 2.4, 0, 0, 7); ctx.ellipse(6, 14, 3.6, 2.4, 0, 0, 7); ctx.fill();
+        // snout
+        ctx.fillStyle = '#ff7fab';
+        ctx.beginPath(); ctx.ellipse(10, 1, 6.2, 5, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#e86a9a'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.ellipse(10, 1, 6.2, 5, 0, 0, 7); ctx.stroke();
+        ctx.fillStyle = '#c94f7f';
+        ctx.beginPath(); ctx.arc(8.2, 1, 1.25, 0, 7); ctx.arc(11.8, 1, 1.25, 0, 7); ctx.fill();
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(3, -6, 4.2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1c2733';
+        ctx.beginPath(); ctx.arc(4.2, -6, 2, 0, 7); ctx.fill();
+        // cheek
+        ctx.fillStyle = 'rgba(242,122,165,.6)';
+        ctx.beginPath(); ctx.arc(-4, 2, 3.2, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawAlien(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.35);
+        var bob = Math.sin(time * 6) * 1.2;
+        ctx.translate(0, bob * 0.3);
+        // dome
+        ctx.fillStyle = 'rgba(191,230,255,.5)';
+        ctx.beginPath(); ctx.arc(0, -3, 13.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, -3, 13.5, Math.PI, 0); ctx.stroke();
+        // alien head (inside dome)
+        ctx.fillStyle = '#57c84b';
+        ctx.beginPath(); ctx.ellipse(0, -7, 7.5, 8, 0, 0, 7); ctx.fill();
+        // alien eyes
+        ctx.fillStyle = '#17351a';
+        ctx.beginPath(); ctx.ellipse(-3.4, -7.5, 2, 3, 0.35, 0, 7); ctx.ellipse(3.4, -7.5, 2, 3, -0.35, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-2.8, -9, 0.7, 0, 7); ctx.arc(4, -9, 0.7, 0, 7); ctx.fill();
+        // antenna
+        ctx.strokeStyle = '#57c84b'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -14.5); ctx.lineTo(0, -17.5); ctx.stroke();
+        ctx.fillStyle = '#ffd76a';
+        ctx.beginPath(); ctx.arc(0, -18.2, 1.8, 0, 7); ctx.fill();
+        // saucer body
+        ctx.fillStyle = '#aeb9c4';
+        ctx.beginPath(); ctx.ellipse(0, 3, 20, 7, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#8d9aa8';
+        ctx.beginPath(); ctx.ellipse(0, 5.5, 20, 5.5, 0, 0, Math.PI); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#cdd6df';
+        ctx.beginPath(); ctx.ellipse(0, 1.5, 12.5, 4, 0, 0, 7); ctx.fill();
+        // saucer lights
+        var lightCols = ['#ffd76a', '#5ee0ff', '#ff7ab6'];
+        for(var li2 = 0; li2 < 3; li2++){
+          var on = Math.floor(time * 4 + li2) % 3 !== 0;
+          ctx.fillStyle = on ? lightCols[li2] : 'rgba(255,255,255,.45)';
+          ctx.beginPath(); ctx.arc(-11 + li2 * 11, 5.5, 2.1, 0, 7); ctx.fill();
+        }
+        ctx.restore();
+      }
+      function drawFrog(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.5);
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        // little white wing, flapping behind the body
+        ctx.save();
+        ctx.translate(-4, -3); ctx.rotate(-flapA * 0.85 - 0.3);
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.beginPath(); ctx.ellipse(-8, -5, 10.5, 5, -0.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,160,80,.5)'; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.ellipse(-8, -5, 10.5, 5, -0.5, 0, 7); ctx.stroke();
+        ctx.restore();
+        // body
+        ctx.fillStyle = '#4ecb5d';
+        ctx.beginPath(); ctx.arc(0, 1, 14.5, 0, 7); ctx.fill();
+        // belly
+        ctx.fillStyle = '#dcf7cb';
+        ctx.beginPath(); ctx.ellipse(2, 7.5, 8.5, 5.5, 0, 0, 7); ctx.fill();
+        // dangling legs
+        ctx.fillStyle = '#3aa84a';
+        ctx.beginPath(); ctx.ellipse(-6, 14.5, 3.8, 2.4, 0, 0, 7); ctx.ellipse(6, 14.5, 3.8, 2.4, 0, 0, 7); ctx.fill();
+        // big eye bumps
+        ctx.fillStyle = '#4ecb5d';
+        ctx.beginPath(); ctx.arc(-6, -10.5, 5.4, 0, 7); ctx.arc(5.5, -11.5, 5.4, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-6, -11, 3.8, 0, 7); ctx.arc(5.5, -12, 3.8, 0, 7); ctx.fill();
+        ctx.fillStyle = '#17351a';
+        ctx.beginPath(); ctx.arc(-4.9, -11, 2, 0, 7); ctx.arc(6.6, -12, 2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-5.5, -11.8, 0.7, 0, 7); ctx.arc(6, -12.8, 0.7, 0, 7); ctx.fill();
+        // wide smile
+        ctx.strokeStyle = '#1d6e3a'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(3, 0, 6.5, 0.35, 2.5); ctx.stroke();
+        // cheek
+        ctx.fillStyle = 'rgba(255,150,170,.55)';
+        ctx.beginPath(); ctx.arc(-8, 3, 2.8, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawPenguin(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.5);
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        // feet
+        ctx.fillStyle = '#f58a1f';
+        ctx.beginPath(); ctx.ellipse(-4, 15.5, 4.6, 2.2, 0, 0, 7); ctx.ellipse(6, 15.5, 4.6, 2.2, 0, 0, 7); ctx.fill();
+        // flippers
+        ctx.save();
+        ctx.translate(-11, -1); ctx.rotate(flapA * 0.8 + 0.35);
+        ctx.fillStyle = '#232a33';
+        ctx.beginPath(); ctx.ellipse(-4, 4, 4.2, 9, 0.45, 0, 7); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(11, -1); ctx.rotate(-flapA * 0.8 - 0.35);
+        ctx.fillStyle = '#232a33';
+        ctx.beginPath(); ctx.ellipse(4, 4, 4.2, 9, -0.45, 0, 7); ctx.fill();
+        ctx.restore();
+        // body
+        ctx.fillStyle = '#2b3440';
+        ctx.beginPath(); ctx.ellipse(0, 0, 13.5, 15.5, 0, 0, 7); ctx.fill();
+        // white belly
+        ctx.fillStyle = '#f4f8fb';
+        ctx.beginPath(); ctx.ellipse(1.5, 4, 8.6, 10.5, 0, 0, 7); ctx.fill();
+        // beak
+        ctx.fillStyle = '#f58a1f';
+        ctx.beginPath();
+        ctx.moveTo(9, -4); ctx.lineTo(19, -1); ctx.lineTo(9, 2.5); ctx.closePath(); ctx.fill();
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(5.5, -7.5, 3.9, 0, 7); ctx.fill();
+        ctx.fillStyle = '#141a21';
+        ctx.beginPath(); ctx.arc(6.7, -7.5, 1.9, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(6.1, -8.3, 0.7, 0, 7); ctx.fill();
+        // cheek
+        ctx.fillStyle = 'rgba(255,150,170,.5)';
+        ctx.beginPath(); ctx.arc(-1, -2, 2.7, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawDragon(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.5);
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        // curling tail with a spade tip
+        ctx.strokeStyle = '#2f8f46'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-11, 4); ctx.quadraticCurveTo(-20, 8, -18, 1); ctx.stroke();
+        ctx.fillStyle = '#f5a623';
+        ctx.beginPath();
+        ctx.moveTo(-18, -5); ctx.lineTo(-22.5, 2.5); ctx.lineTo(-14.5, 2.5); ctx.closePath(); ctx.fill();
+        // big scalloped wing, flapping
+        ctx.save();
+        ctx.translate(-3, -6); ctx.rotate(-flapA * 0.75 - 0.2);
+        ctx.fillStyle = '#7ed491';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-15, -11); ctx.lineTo(-11, -4);
+        ctx.lineTo(-17, -2); ctx.lineTo(-10, 2);
+        ctx.lineTo(-14, 6); ctx.lineTo(-4, 5);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#2f8f46'; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-15, -11); ctx.lineTo(-11, -4); ctx.lineTo(-17, -2); ctx.lineTo(-10, 2); ctx.lineTo(-14, 6); ctx.lineTo(-4, 5);
+        ctx.closePath(); ctx.stroke();
+        ctx.restore();
+        // body
+        ctx.fillStyle = '#3fae5a';
+        ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.fill();
+        // belly
+        ctx.fillStyle = '#fdf0c0';
+        ctx.beginPath(); ctx.ellipse(3, 6.5, 8, 6.5, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(207,127,13,.5)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(-3, 4.5); ctx.lineTo(9, 4.5); ctx.moveTo(-3.5, 8.5); ctx.lineTo(9.5, 8.5); ctx.stroke();
+        // back spikes
+        ctx.fillStyle = '#f5a623';
+        ctx.beginPath();
+        ctx.moveTo(-11, -7); ctx.lineTo(-14.5, -12); ctx.lineTo(-7.5, -11.5); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-13, 0); ctx.lineTo(-17, -3.5); ctx.lineTo(-12, 3); ctx.closePath(); ctx.fill();
+        // horns
+        ctx.fillStyle = '#ffe9a8';
+        ctx.beginPath();
+        ctx.moveTo(-4, -12.5); ctx.lineTo(-6.5, -19); ctx.lineTo(-0.5, -14.5); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(4, -13.5); ctx.lineTo(4.5, -20.5); ctx.lineTo(8.5, -14.5); ctx.closePath(); ctx.fill();
+        // snout + nostril + tooth
+        ctx.fillStyle = '#55bd6d';
+        ctx.beginPath(); ctx.ellipse(10.5, 2, 6.5, 5.2, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1d6e3a';
+        ctx.beginPath(); ctx.arc(13, 0.4, 1.2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(8.5, 6.5); ctx.lineTo(10.5, 6.5); ctx.lineTo(9.5, 9.5); ctx.closePath(); ctx.fill();
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(4.5, -6, 4.2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#17351a';
+        ctx.beginPath(); ctx.arc(5.7, -6, 2, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawBee(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.45);
+        var flutter = Math.sin(time * 42) * 0.45;
+        // stinger
+        ctx.fillStyle = '#2b2b2b';
+        ctx.beginPath();
+        ctx.moveTo(-14, -1); ctx.lineTo(-21, 1.5); ctx.lineTo(-14, 4); ctx.closePath(); ctx.fill();
+        // wings (fast flutter)
+        ctx.fillStyle = 'rgba(255,255,255,.8)';
+        ctx.save();
+        ctx.translate(-3, -9); ctx.rotate(-0.5 + flutter);
+        ctx.beginPath(); ctx.ellipse(-4, -5, 9.5, 4.6, -0.6, 0, 7); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(4, -10); ctx.rotate(-0.3 - flutter);
+        ctx.beginPath(); ctx.ellipse(3, -5, 8.5, 4.2, -0.4, 0, 7); ctx.fill();
+        ctx.restore();
+        // striped body
+        ctx.save();
+        ctx.beginPath(); ctx.ellipse(0, 1, 15.5, 12.5, 0, 0, 7); ctx.clip();
+        ctx.fillStyle = '#f7c531'; ctx.fillRect(-17, -13, 34, 28);
+        ctx.fillStyle = '#2b2b2b';
+        ctx.fillRect(-11, -13, 6.5, 28);
+        ctx.fillRect(0.5, -13, 6.5, 28);
+        ctx.fillRect(11.5, -13, 5, 28);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(120,80,0,.45)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.ellipse(0, 1, 15.5, 12.5, 0, 0, 7); ctx.stroke();
+        // antennae
+        ctx.strokeStyle = '#2b2b2b'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(8, -9); ctx.quadraticCurveTo(11, -14, 14, -14.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(3, -10.5); ctx.quadraticCurveTo(4, -15.5, 7, -17); ctx.stroke();
+        ctx.fillStyle = '#2b2b2b';
+        ctx.beginPath(); ctx.arc(14.6, -14.6, 1.7, 0, 7); ctx.arc(7.6, -17.2, 1.7, 0, 7); ctx.fill();
+        // eye + smile
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(8, -3.5, 3.9, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1c2733';
+        ctx.beginPath(); ctx.arc(9.2, -3.5, 1.9, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#1c2733'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(8.5, 2.5, 3.6, 0.4, 2.2); ctx.stroke();
+        // cheek
+        ctx.fillStyle = 'rgba(255,120,140,.55)';
+        ctx.beginPath(); ctx.arc(2, 2, 2.5, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawRobot(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.4);
+        // jetpack + flame
+        var flame = 7 + Math.sin(time * 30) * 2.5 + Math.random() * 1.5;
+        ctx.fillStyle = '#7e8a96';
+        rr(-19, -8, 8, 17, 3); ctx.fill();
+        ctx.fillStyle = '#f58a1f';
+        ctx.beginPath();
+        ctx.moveTo(-18.5, 9.5); ctx.lineTo(-15, 9.5 + flame); ctx.lineTo(-11.5, 9.5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffd94d';
+        ctx.beginPath();
+        ctx.moveTo(-17.3, 9.5); ctx.lineTo(-15, 9.5 + flame * 0.55); ctx.lineTo(-12.7, 9.5); ctx.closePath(); ctx.fill();
+        // little arm
+        ctx.fillStyle = '#8d9aa8';
+        rr(11, 1, 6, 4.5, 2); ctx.fill();
+        // body / head unit
+        ctx.fillStyle = '#c3ccd4';
+        rr(-13, -14, 27, 28, 7); ctx.fill();
+        ctx.strokeStyle = '#7e8a96'; ctx.lineWidth = 2;
+        rr(-13, -14, 27, 28, 7); ctx.stroke();
+        // face screen
+        ctx.fillStyle = '#22303c';
+        rr(-9, -10.5, 19, 12, 4); ctx.fill();
+        // glowing eyes
+        ctx.fillStyle = '#5ee0ff';
+        ctx.beginPath(); ctx.arc(-3, -4.5, 2.4, 0, 7); ctx.arc(5.5, -4.5, 2.4, 0, 7); ctx.fill();
+        // smile LEDs
+        ctx.fillStyle = '#5ee0ff';
+        ctx.fillRect(-2.5, -0.6, 2, 1.6); ctx.fillRect(0.8, -0.6, 2, 1.6); ctx.fillRect(4.1, -0.6, 2, 1.6);
+        // chest light + panel
+        ctx.fillStyle = '#ff5a4e';
+        ctx.beginPath(); ctx.arc(1, 6.5, 3, 0, 7); ctx.fill();
+        ctx.fillStyle = '#8d9aa8';
+        ctx.fillRect(-7, 10.5, 16, 2.2);
+        // antenna
+        ctx.strokeStyle = '#7e8a96'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(1, -14); ctx.lineTo(1, -19.5); ctx.stroke();
+        ctx.fillStyle = '#ff5a4e';
+        ctx.beginPath(); ctx.arc(1, -20.5, 2.6, 0, 7); ctx.fill();
+        // ear bolts
+        ctx.fillStyle = '#8d9aa8';
+        ctx.beginPath(); ctx.arc(-13.5, -4, 2.4, 0, 7); ctx.arc(14.5, -4, 2.4, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawGhost(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.3);
+        ctx.translate(0, Math.sin(time * 5) * 1.4);
+        // little arms
+        var wave = Math.sin(time * 7) * 0.25;
+        ctx.fillStyle = '#ffffff';
+        ctx.save();
+        ctx.translate(-13, 0); ctx.rotate(0.5 + wave);
+        ctx.beginPath(); ctx.ellipse(-3.5, 0, 5.5, 3, 0, 0, 7); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(13, 0); ctx.rotate(-0.5 - wave);
+        ctx.beginPath(); ctx.ellipse(3.5, 0, 5.5, 3, 0, 0, 7); ctx.fill();
+        ctx.restore();
+        // body with a wavy hem
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-13.5, 13);
+        ctx.lineTo(-13.5, -2);
+        ctx.arc(0, -2, 13.5, Math.PI, 0);
+        ctx.lineTo(13.5, 13);
+        var wob = Math.sin(time * 6) * 1.2;
+        ctx.quadraticCurveTo(10, 9.5 + wob, 6.75, 13);
+        ctx.quadraticCurveTo(3.4, 16.5 - wob, 0, 13);
+        ctx.quadraticCurveTo(-3.4, 9.5 + wob, -6.75, 13);
+        ctx.quadraticCurveTo(-10, 16.5 - wob, -13.5, 13);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(140,170,200,.55)'; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-13.5, 13);
+        ctx.lineTo(-13.5, -2);
+        ctx.arc(0, -2, 13.5, Math.PI, 0);
+        ctx.lineTo(13.5, 13);
+        ctx.stroke();
+        // friendly face
+        ctx.fillStyle = '#2b3440';
+        ctx.beginPath(); ctx.ellipse(-4.5, -3.5, 2, 2.9, 0, 0, 7); ctx.ellipse(4.5, -3.5, 2, 2.9, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-3.9, -4.4, 0.7, 0, 7); ctx.arc(5.1, -4.4, 0.7, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#2b3440'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(0, 1.5, 3.6, 0.35, Math.PI - 0.35); ctx.stroke();
+        // rosy cheeks
+        ctx.fillStyle = 'rgba(255,140,170,.65)';
+        ctx.beginPath(); ctx.arc(-8.5, 1.5, 2.7, 0, 7); ctx.arc(8.5, 1.5, 2.7, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawCharacter(){
+        if(character === 'pig') drawPig();
+        else if(character === 'alien') drawAlien();
+        else if(character === 'frog') drawFrog();
+        else if(character === 'penguin') drawPenguin();
+        else if(character === 'dragon') drawDragon();
+        else if(character === 'bee') drawBee();
+        else if(character === 'robot') drawRobot();
+        else if(character === 'ghost') drawGhost();
+        else drawBird();
+      }
+
+      function draw(){
+        // sky
+        var g = ctx.createLinearGradient(0, 0, 0, VH);
+        g.addColorStop(0, '#6ec1f5'); g.addColorStop(0.62, '#a8dcff'); g.addColorStop(1, '#cdeffd');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+        // sun
+        ctx.fillStyle = '#ffd94d';
+        ctx.beginPath(); ctx.arc(VW - 56, 52, 24, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,217,77,.35)';
+        ctx.beginPath(); ctx.arc(VW - 56, 52, 34, 0, 7); ctx.fill();
+        for(var i = 0; i < clouds.length; i++) drawCloud(clouds[i].x, clouds[i].y, clouds[i].s);
+        // distant hills
+        ctx.fillStyle = '#8fd07a';
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND);
+        for(var hx = 0; hx <= VW; hx += 24){
+          ctx.lineTo(hx, GROUND - 26 - Math.sin((hx + dist * 0.25) * 0.02) * 12);
+        }
+        ctx.lineTo(VW, GROUND); ctx.closePath(); ctx.fill();
+
+        // segments
+        for(var si = 0; si < segments.length; si++){
+          var s = segments[si];
+          if(s.x + s.w < -4 || s.x > VW + 4) continue;
+          if(s.type === 'grass'){
+            ctx.fillStyle = '#69bd4d'; ctx.fillRect(s.x, GROUND, s.w, VH - GROUND);
+            ctx.fillStyle = '#57a83e'; ctx.fillRect(s.x, GROUND, s.w, 7);
+            ctx.fillStyle = '#8a5a2b'; ctx.fillRect(s.x, VH - 22, s.w, 22);
+            for(var t = 0; t < s.trees.length; t++) drawTree(s.x + s.trees[t].dx, s.trees[t].s);
+            drawTower(s);
+          } else if(s.type === 'road'){
+            ctx.fillStyle = '#454a52'; ctx.fillRect(s.x, GROUND, s.w, VH - GROUND);
+            ctx.fillStyle = '#5b6169'; ctx.fillRect(s.x, GROUND, s.w, 7);
+            ctx.fillStyle = '#f7d038';
+            for(var dx = s.x - (dist % 36); dx < s.x + s.w; dx += 36){
+              if(dx > s.x) ctx.fillRect(dx, GROUND + 34, 20, 5);
+            }
+            // crosswalk stripes at the segment start (Crossy Road nod)
+            ctx.fillStyle = 'rgba(255,255,255,.75)';
+            for(var cz = 0; cz < 4; cz++) ctx.fillRect(s.x + 5, GROUND + 10 + cz * 20, 9, 12);
+            for(var c2 = 0; c2 < s.cars.length; c2++) drawCar(s.x + s.cars[c2].dx, GROUND - s.cars[c2].h, s.cars[c2]);
+          } else if(s.type === 'river'){
+            ctx.fillStyle = '#3d9bd6'; ctx.fillRect(s.x, WATER_TOP, s.w, VH - WATER_TOP);
+            ctx.fillStyle = '#57b5ec';
+            for(var wy = 0; wy < 4; wy++){
+              var wob = Math.sin(time * 2 + wy * 1.7 + s.x * 0.05) * 4;
+              ctx.fillRect(s.x + 8 + wob + wy * 14, WATER_TOP + 18 + wy * 18, 26, 3.5);
+            }
+            ctx.fillStyle = '#69bd4d'; ctx.fillRect(s.x, GROUND - 3, 6, 12); ctx.fillRect(s.x + s.w - 6, GROUND - 3, 6, 12);
+            for(var l2 = 0; l2 < s.logs.length; l2++) drawLog(s.x + s.logs[l2].dx, s.logs[l2].w);
+          }
+          // egg
+          if(s.egg && !s.egg.taken){
+            var ex2 = s.x + s.egg.dx, ey2 = s.egg.y + Math.sin(time * 2.4 + s.egg.bob) * 5;
+            ctx.fillStyle = '#ffd76a';
+            ctx.beginPath(); ctx.ellipse(ex2, ey2, 9, 11.5, 0, 0, 7); ctx.fill();
+            ctx.fillStyle = '#ffe9a8';
+            ctx.beginPath(); ctx.ellipse(ex2 - 3, ey2 - 4, 3.4, 5, -0.4, 0, 7); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.6;
+            var tw2 = (time * 3 + s.egg.bob) % 2;
+            if(tw2 < 1){ ctx.beginPath(); ctx.moveTo(ex2 + 12, ey2 - 10); ctx.lineTo(ex2 + 16, ey2 - 14); ctx.moveTo(ex2 + 12, ey2 - 14); ctx.lineTo(ex2 + 16, ey2 - 10); ctx.stroke(); }
+          }
+        }
+
+        if(state !== 'ready') drawCharacter();
+
+        // particles
+        for(var pi = 0; pi < particles.length; pi++){
+          var p = particles[pi];
+          ctx.globalAlpha = Math.max(0, p.life / p.max);
+          ctx.fillStyle = p.color;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        if(state === 'ready'){
+          ctx.fillStyle = 'rgba(255,255,255,.92)';
+          ctx.font = '800 15px Nunito, sans-serif';
+          ctx.textAlign = 'center';
+        }
+      }
+
+      /* ---------------- Loop ---------------- */
+      var lastTs = 0;
+      function loop(ts){
+        requestAnimationFrame(loop);
+        var dt = Math.min(0.033, (ts - lastTs) / 1000 || 0.016);
+        lastTs = ts;
+        if(state === 'playing') update(dt);
+        else if(state === 'ready'){ time += dt; }
+        draw();
+      }
+
+      /* ---------------- Input ---------------- */
+      document.getElementById('startBtn').addEventListener('click', startGame);
+      document.getElementById('againBtn').addEventListener('click', startGame);
+      var playBtns = document.querySelectorAll('[data-play]');
+      for(var pb = 0; pb < playBtns.length; pb++) playBtns[pb].addEventListener('click', startGame);
+      document.getElementById('pauseBtn').addEventListener('click', function(){ audio(); togglePause(); });
+      soundBtn.addEventListener('click', function(){
+        muted = !muted;
+        soundBtn.textContent = muted ? '🔇' : '🔊';
+        if(!muted) audio();
+        refreshMusicGain(); // master mute silences the music too; unmute restores it
+      });
+      musicBtn.addEventListener('click', function(){
+        musicOn = !musicOn;
+        musicBtn.classList.toggle('off', !musicOn);
+        musicBtn.setAttribute('aria-label', musicOn ? 'Turn music off' : 'Turn music on');
+        if(!musicOn){ stopMusic(); }
+        else if(state === 'playing'){ audio(); startMusic(); }
+      });
+      flapBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); flap(); });
+      canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); if(state === 'playing') flap(); });
+      document.getElementById('stage').addEventListener('pointerdown', function(e){
+        if(e.target === canvas) return;
+      });
+      window.addEventListener('keydown', function(e){
+        if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if(e.code === 'Space' || e.code === 'ArrowUp'){
+          e.preventDefault();
+          if(state === 'ready' || state === 'over'){
+            if(startOverlay.classList.contains('hidden') === false || overOverlay.classList.contains('hidden') === false){
+              // only restart via keyboard once the game-over panel is visible
+              if(state === 'ready' || !overOverlay.classList.contains('hidden')) startGame();
+            }
+          } else if(state === 'playing'){ flap(); }
+          else if(state === 'paused'){ togglePause(); }
+        }
+        if(e.code === 'KeyP') togglePause();
+        if(e.code === 'KeyM') soundBtn.click();
+      });
+      document.addEventListener('visibilitychange', function(){
+        if(document.hidden && state === 'playing') togglePause();
+      });
+
+      buildSkinPickers();
+      setupPromoForms();
+      initSocial();
+      applyUnlockUI();
+      if(justUnlocked) toast('🎉 Thanks! Full version unlocked — pick your bird color below', 3200);
+      else if(justBoughtPack) toast('🎉 Thanks! Pack ' + justBoughtPack + ' unlocked — pick your new characters below', 3200);
+      reset();
+      requestAnimationFrame(loop);
+    })();
+    </script>
+  </body>
+</html>
