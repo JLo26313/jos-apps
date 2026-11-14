@@ -139,6 +139,12 @@
       .pack-buy:active{ transform:translateY(2px); box-shadow:0 1px 0 #c47f10; }
       .pack-secure{ font-size:11.5px; font-weight:700; opacity:.85; margin-top:5px; }
       .skin-btn.locked::after{ content:"🔒"; font-size:11px; margin-left:1px; }
+      /* Background picker */
+      .bg-picker{ margin-top:14px; display:none; }
+      .bg-picker.show{ display:block; }
+      .bg-picker .lab{ font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.85; margin-bottom:7px; }
+      .bg-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+      .bg-sw{ width:30px; height:20px; border-radius:6px; border:2px solid rgba(0,0,0,.25); flex:none; }
       /* Locked-pick offer: what the pack gives you + its checkout button */
       .offer-box{
         margin:12px auto 0; width:100%; max-width:340px; flex:none;
@@ -176,6 +182,49 @@
       .stat .n{ font-family:"Baloo 2", sans-serif; font-size:26px; font-weight:800; line-height:1; }
       .stat .t{ font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; opacity:.85; }
       .medal{ font-size:17px; font-weight:800; margin-top:10px; color:#ffd76a; min-height:22px; }
+      /* Campaign levels */
+      .level-bar{
+        margin-bottom:10px; background:var(--panel); border:2px solid var(--line); border-radius:14px;
+        padding:8px 12px; display:flex; flex-wrap:wrap; gap:4px 16px; align-items:center; justify-content:center;
+        font-weight:800; font-size:13.5px; box-shadow:0 6px 16px rgba(23,50,74,.12); text-align:center;
+      }
+      .level-bar .lv-name{ font-family:"Baloo 2", sans-serif; font-size:16.5px; }
+      .level-bar .lv-prog{ color:var(--ink-soft); }
+      .level-panel{
+        margin-top:14px; width:100%; max-width:360px; flex:none;
+        background:rgba(10,30,48,.45); border:2px solid rgba(255,255,255,.35);
+        border-radius:14px; padding:10px 12px 8px; text-align:left;
+      }
+      .level-grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:7px; }
+      .level-card{
+        border:2px solid rgba(255,255,255,.3); background:rgba(255,255,255,.10); color:#fff;
+        border-radius:10px; padding:7px 9px; cursor:pointer; text-align:left;
+        font-family:"Nunito", sans-serif; font-weight:700; font-size:12.5px; line-height:1.35;
+      }
+      .level-card .lc-name{ font-family:"Baloo 2", sans-serif; font-size:14.5px; font-weight:800; line-height:1.2; }
+      .level-card.cur{ border-color:#ffd76a; background:rgba(255,215,106,.22); }
+      .level-card.locked{ opacity:.55; }
+      .level-card .lc-stars{ color:#ffd76a; letter-spacing:2px; font-size:14px; }
+      .level-card .lc-lock{ font-size:11.5px; opacity:.9; }
+      .level-note{ font-size:12.5px; font-weight:700; opacity:.88; margin-top:8px; line-height:1.4; }
+      .stars-big{ font-size:42px; letter-spacing:5px; color:#ffd76a; text-shadow:0 2px 0 rgba(0,0,0,.35); line-height:1.1; margin-top:4px; }
+      .stars-big .off{ color:rgba(255,255,255,.25); text-shadow:none; }
+      .over-stars{ font-size:28px; letter-spacing:3px; color:#ffd76a; min-height:34px; margin-top:2px; }
+      .level-result{ margin-top:8px; font-weight:800; font-size:14.5px; line-height:1.45; max-width:360px; }
+      .buy-next-wrap{ margin-top:12px; display:flex; flex-direction:column; align-items:center; flex:none; }
+      .buy-next-wrap .unlock-btn{ margin-top:0; }
+      .win-char{
+        margin-top:12px; width:100%; max-width:340px; flex:none;
+        background:rgba(255,215,106,.18); border:2px solid #ffd76a; border-radius:14px; padding:12px 14px 10px;
+      }
+      .win-char .wc-title{ font-family:"Baloo 2", sans-serif; font-weight:800; font-size:18px; color:#ffd76a; line-height:1.2; }
+      .char-choice{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:9px; }
+      .choice-btn{
+        padding:9px 16px; border:2px solid rgba(255,255,255,.5); border-radius:999px;
+        background:rgba(255,255,255,.14); color:#fff; font-family:"Baloo 2", sans-serif; font-size:15px; font-weight:800; cursor:pointer;
+      }
+      .choice-btn.gold{ background:var(--gold); color:#3a2400; border-color:transparent; box-shadow:0 3px 0 #c47f10; }
+      .choice-btn:active{ transform:translateY(2px); }
       /* Toast */
       .toast{
         position:absolute; top:14px; left:50%; transform:translateX(-50%) translateY(-8px);
@@ -273,6 +322,12 @@
         <button class="icon-btn" id="musicBtn" aria-label="Toggle music" title="Music on/off">🎵</button>
       </div>
 
+      <div class="level-bar" id="levelBar" aria-label="Current level">
+        <span class="lv-name" id="lvName">Level 1 · Classic Day</span>
+        <span class="lv-prog" id="lvProg">Target: 10 pts</span>
+        <span class="lv-prog" id="lvTime">Time: 0:00</span>
+      </div>
+
       <div class="stage" id="stage">
         <canvas id="game" width="432" height="640"></canvas>
         <div class="paused-tag" id="pausedTag">Paused — tap ▶ to resume</div>
@@ -297,6 +352,11 @@
             <span>🪵 Rivers are only safe on a log</span>
             <span>🐷 Land on a pig tower to pop the pig: +5</span>
             <span>🥚 Grab golden eggs: +3</span>
+          </div>
+          <div class="level-panel">
+            <div class="lb-title">🗺️ Campaign — every background is a level</div>
+            <div class="level-grid" data-level-grid></div>
+            <div class="level-note">Reach the target score to clear a level, unlock the next one — and a brand-new character. Stars are all about speed: the faster you hit the target, the more stars you earn (up to ★★★). Each level flies faster than the last. Crash before the target? The game-over screen always lets you retry — or buy the next level for $0.99 and skip ahead.</div>
           </div>
           <button class="big-btn" id="startBtn">Start flying</button>
           <div class="lb-panel">
@@ -326,6 +386,10 @@
             <div class="lab">Pick your character</div>
             <div class="skin-row"></div>
           </div>
+          <div class="bg-picker" data-bg-picker>
+            <div class="lab">Pick your background</div>
+            <div class="bg-row"></div>
+          </div>
           <div class="playbar">
             <button class="big-btn" data-play type="button">▶ Play</button>
             <div class="play-hint">Picked your character? Tap Play to fly.</div>
@@ -341,6 +405,13 @@
             <div class="stat"><div class="n" id="finalBest">0</div><div class="t">Best</div></div>
           </div>
           <div class="medal" id="medalLine"></div>
+          <div class="over-stars" id="overStars"></div>
+          <div class="level-result" id="overLevelInfo"></div>
+          <div class="buy-next-wrap" id="buyNextWrap" style="display:none">
+            <a class="unlock-btn" id="buyNextBtn" href="#" target="_blank" rel="noopener">Buy next level — $0.99</a>
+            <button class="unlock-btn" id="goNextBtn" type="button" style="display:none">▶ Play next level</button>
+            <div class="secure-note">…or tap “Fly again” above to try this level again — your call</div>
+          </div>
           <div class="challenge-result" data-challenge-result></div>
           <div class="submit-line" data-submit-line aria-live="polite"></div>
           <div class="lb-panel">
@@ -372,10 +443,38 @@
             <div class="lab">Pick your character</div>
             <div class="skin-row"></div>
           </div>
+          <div class="bg-picker" data-bg-picker>
+            <div class="lab">Pick your background</div>
+            <div class="bg-row"></div>
+          </div>
           <div class="playbar">
             <button class="big-btn" data-play type="button">▶ Play again</button>
             <div class="play-hint">Picked your character? Tap Play to fly.</div>
           </div>
+        </div>
+
+        <div class="overlay hidden" id="winOverlay">
+          <h2>Level Complete! 🎉</h2>
+          <p id="winLevelName">Level 1 · Classic Day — cleared!</p>
+          <div class="stars-big" id="winStars"></div>
+          <p id="winStarNote"></p>
+          <div class="stats">
+            <div class="stat"><div class="n" id="winScore">0</div><div class="t">Score</div></div>
+            <div class="stat"><div class="n" id="winTime">0:00</div><div class="t">Time</div></div>
+            <div class="stat"><div class="n" id="winTarget">0</div><div class="t">Target</div></div>
+          </div>
+          <div class="win-char" id="winCharBox" style="display:none">
+            <div class="wc-title" id="winCharTitle">🎉 New character unlocked!</div>
+            <p id="winCharText"></p>
+            <div class="char-choice">
+              <button class="choice-btn gold" id="useCharBtn" type="button">Yes — play as them!</button>
+              <button class="choice-btn" id="keepCharBtn" type="button">Keep my character</button>
+            </div>
+            <div class="promo-msg ok" id="winCharMsg" aria-live="polite"></div>
+          </div>
+          <button class="big-btn" id="nextLevelBtn">▶ Next level</button>
+          <button class="share-btn" id="replayBtn" type="button" style="margin-top:10px; max-width:240px; flex:none">↻ Replay this level</button>
+          <p id="winFinalNote" style="display:none">🏆 That was the final level — campaign complete! Replay any level from the start screen.</p>
         </div>
       </div>
 
@@ -386,6 +485,7 @@
           <li><b>Roads:</b> cars drive both ways along the ground. Skim just over a roof for a <b>near-miss +1</b> — touch one and the run ends.</li>
           <li><b>Rivers:</b> open water is a splash landing. Logs float by — you can rest on one and ride it, then flap off before it drifts away.</li>
           <li><b>Pig towers:</b> crates stacked on the grass with a pig on top. Drop onto the pig from above to pop it for <b>+5</b> and crumble the tower. Hit the side and it's over.</li>
+          <li><b>Levels:</b> every background is a level, and each one flies faster than the last. Hit the level's <b>target score</b> to clear it and unlock the next level plus a new character — you'll be asked if you want to play as them. <b>Stars are decided by time:</b> the faster you reach the target, the more stars, up to 3. Crash out and the game-over screen always gives you the choice: <b>try again, or buy the next level for $0.99</b> and skip ahead.</li>
           <li><b>Scoring:</b> +1 for every stretch of road, river, or grass you cross, +3 per golden egg. The traffic speeds up the further you get.</li>
         </ul>
         <div class="keys">Keys: <kbd>Space</kbd> / <kbd>↑</kbd> flap &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> sound &nbsp;·&nbsp; 🎵 button (top right) turns the music on/off — it speeds up as you do</div>
@@ -453,7 +553,8 @@
         honk:  function(){ tone(340, 320, 0.16, 'square', 0.07); tone(270, 255, 0.16, 'square', 0.07, 0.02); },
         splash:function(){ noiseBurst(0.45, 700, 0.25); tone(400, 90, 0.4, 'sine', 0.12); },
         crash: function(){ noiseBurst(0.3, 900, 0.22); tone(220, 55, 0.45, 'sawtooth', 0.16); },
-        thud:  function(){ noiseBurst(0.18, 500, 0.18); tone(160, 60, 0.2, 'sine', 0.14); }
+        thud:  function(){ noiseBurst(0.18, 500, 0.18); tone(160, 60, 0.2, 'sine', 0.14); },
+        win:   function(){ tone(523, 523, 0.12, 'square', 0.12); tone(659, 659, 0.12, 'square', 0.12, 0.11); tone(784, 784, 0.14, 'square', 0.12, 0.22); tone(1046, 1318, 0.32, 'square', 0.13, 0.34); }
       };
 
       /* ---------------- Background music (synthesized, no files) ----------------
@@ -604,7 +705,7 @@
           for(var bi = 0; bi < 2; bi++) seg.bushes.push({ dx: rand(10, w - 44), s: rand(0.8, 1.3) });
           if(Math.random() < 0.42) seg.houses.push({ dx: rand(6, Math.max(10, w - 118)), w: Math.round(rand(78, 104)), h: Math.round(rand(52, 74)), wall: pick(['#fff1c9','#ffd9c9','#d9ecff','#ffe3ef','#e6f5d6']), roof: pick(['#c65d3a','#8a5a2b','#5b7fa6','#a34a6b']) });
           var nb = Math.random() < 0.75 ? (Math.random() < 0.4 ? 2 : 1) : 0;
-          for(var bfi = 0; bfi < nb; bfi++) seg.butterflies.push({ dx: rand(20, w - 24), ph: rand(0, 6.28), c: pick(['#ff9a3c','#c084fc','#ff7ab6','#5ec8f2']) });
+          for(var bfi = 0; bfi < nb; bfi++) seg.butterflies.push({ dx: rand(20, w - 24), ph: rand(0, 6.28), c: pick(['#ff6a00','#a855f7','#ff2d78','#00a8ff','#ffcc00']) });
         }
         if(type === 'river'){
           for(var ri2 = 0; ri2 < 4; ri2++) seg.reeds.push({ dx: rand(4, w - 10), s: rand(0.7, 1.2), side: ri2 % 2 });
@@ -618,7 +719,7 @@
             var dir = Math.random() < 0.5 ? 1 : -1;
             seg.cars.push({
               dx: rand(0, w - 70), w: Math.round(rand(62, 86)), h: 30,
-              dir: dir, vx: dir * rand(55, 135),
+              dir: dir, vx: dir * rand(55, 135) * (1 + (currentLevel - 1) * 0.07),
               color: pick(CAR_COLORS), passed: false
             });
           }
@@ -643,7 +744,7 @@
       }
 
       function reset(){
-        score = 0; pigs = 0; speed = 150; dist = 0; time = 0;
+        score = 0; pigs = 0; speed = 150; dist = 0; time = 0; runTime = 0; levelDone = false;
         bird = { x: 104, y: VH * 0.40, vy: 0, r: 15, wing: 0, rot: 0 };
         segments = []; particles = []; standingLog = null;
         segCount = 0; nextX = -20;
@@ -679,7 +780,12 @@
                          fc_frog_claimed / fc_frog_left (FROG26, 30 min of play left)
                          fc_bee_claimed / fc_bee_left   (BEE26, 30 min of play left)
                          fc_ghost_claimed / fc_ghost_left (GHOST26, 30 min of play left)
-           promo master: fc_every_unlocked (EVERY26, permanent, separate from paid)
+           promo master: fc_every_unlocked (EVERY26, permanent, separate from paid;
+                         covers colors, all 4 packs AND all 8 backgrounds)
+           paid bgs    : fc_bg1 .. fc_bg8 (Stripe ?bgN=success, permanent)
+           bg trials   : fc_bgN_claimed / fc_bgN_left (SUNSET26, MIDNIGHT26,
+                         SNOW26, DESERT26, FOREST26, OCEAN26, AUTUMN26,
+                         SPACE26 — 30 min of play time each)
          A timed promo grants access for its minutes of actual play time only —
          time counts down solely inside update(), i.e. while a run is in
          progress and the game is not paused. */
@@ -702,6 +808,18 @@
         'https://buy.stripe.com/9B69ASdkw8JTag4e4ocAo0r'
       ];
       var COLOR_LINK = 'https://buy.stripe.com/6oU5kCdkw9NXag48K4cAo0n';
+      /* Purchasable backgrounds (index 0 is the free Classic Day default).
+         sw = three swatch colors for the picker button preview. */
+      var BGS = [null,
+        { name: 'Sunset',        code: 'SUNSET26',   link: 'https://buy.stripe.com/cNi6oGa8ke4d87We4ocAo0s', sw: ['#3a1c5e', '#e85d3f', '#ffb347'] },
+        { name: 'Midnight City', code: 'MIDNIGHT26', link: 'https://buy.stripe.com/4gM3cu5S45xH0FuaSccAo0t', sw: ['#0b1030', '#1d2a5e', '#ffd76a'] },
+        { name: 'Snowy Peaks',   code: 'SNOW26',     link: 'https://buy.stripe.com/fZu4gycgsd090Fu8K4cAo0u', sw: ['#bcd9f2', '#ffffff', '#7fb8dc'] },
+        { name: 'Desert Dunes',  code: 'DESERT26',   link: 'https://buy.stripe.com/00weVc5S44tD3RG2lGcAo0v', sw: ['#ffe3a3', '#f2b04e', '#c97e2c'] },
+        { name: 'Forest',        code: 'FOREST26',   link: 'https://buy.stripe.com/7sY14m2FSaS12NC0dycAo0w', sw: ['#0e3b24', '#1e6b3f', '#7ed491'] },
+        { name: 'Ocean',         code: 'OCEAN26',    link: 'https://buy.stripe.com/5kQ5kC2FSbW5dsg7G0cAo0x', sw: ['#7fe3f0', '#1e8fc4', '#0b4d73'] },
+        { name: 'Autumn',        code: 'AUTUMN26',   link: 'https://buy.stripe.com/eVqeVc6W81hrcocbWgcAo0y', sw: ['#ffd9a0', '#e8762d', '#8f3b1d'] },
+        { name: 'Space',         code: 'SPACE26',    link: 'https://buy.stripe.com/9B6cN41BOaS1fAo1hCcAo0z', sw: ['#12082b', '#5b2a86', '#7fe3f0'] }
+      ];
       var CHARACTERS = [
         { id: 'pig',     name: 'Flying Pig',  pack: 1, dot: '#ff8fb8' },
         { id: 'alien',   name: 'UFO Alien',   pack: 1, dot: '#57c84b' },
@@ -711,6 +829,23 @@
         { id: 'bee',     name: 'Bumblebee',   pack: 3, dot: '#f7c531' },
         { id: 'robot',   name: 'Robot',       pack: 4, dot: '#aeb9c4' },
         { id: 'ghost',   name: 'Ghost',       pack: 4, dot: '#eef2f7' }
+      ];
+      /* Campaign levels: each background is a level (level n plays on
+         background n-1). Reach `target` points to clear the level. Stars
+         are decided purely by how long reaching the target took: at or
+         under `three` seconds = 3 stars, at or under `two` = 2 stars,
+         any clear = 1 star. Clearing levels 1-8 each unlocks one
+         character (the pack characters, in order). */
+      var LEVELS = [
+        { name: 'Classic Day',   target: 10, three: 20,  two: 32 },
+        { name: 'Sunset',        target: 15, three: 28,  two: 44 },
+        { name: 'Midnight City', target: 20, three: 36,  two: 56 },
+        { name: 'Snowy Peaks',   target: 25, three: 44,  two: 68 },
+        { name: 'Desert Dunes',  target: 30, three: 52,  two: 80 },
+        { name: 'Forest',        target: 35, three: 60,  two: 92 },
+        { name: 'Ocean',         target: 40, three: 68,  two: 104 },
+        { name: 'Autumn',        target: 50, three: 84,  two: 128 },
+        { name: 'Space',         target: 60, three: 100, two: 152 }
       ];
       var PROMO_SECONDS = 3600; // 1 hour of play time
       var PROMO_SECONDS_30 = 1800; // 30 minutes of play time
@@ -727,7 +862,20 @@
       var frogPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var beePromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var ghostPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      // Backgrounds: paid flags, promo trials (30 min of play each), selection.
+      var bgPaid = [false, false, false, false, false, false, false, false, false];
+      var justBoughtBg = 0;
+      var bgIndex = 0; // 0 = Classic Day, the free default background
+      var bgPromos = [null];
+      for(var bgi = 1; bgi <= 8; bgi++) bgPromos.push({ claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 });
       var promoSaveTimer = 0;
+      // Campaign progress (device-only, same storage the unlocks already use).
+      var currentLevel = 1;     // 1..9
+      var campaignUnlocked = 1; // highest level reached by clearing levels
+      var levelStars = {};      // level number -> best stars earned (1..3)
+      var levelChars = [];      // character ids unlocked by clearing levels
+      var runTime = 0;          // seconds spent in the current run
+      var levelDone = false;    // target reached this run
 
       function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
       function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
@@ -750,6 +898,7 @@
         savePromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
         savePromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
         savePromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+        for(var bs = 1; bs <= 8; bs++) savePromo(bgPromos[bs], 'fc_bg' + bs + '_claimed', 'fc_bg' + bs + '_left');
       }
 
       /* ----- load paid state + saved picks ----- */
@@ -761,10 +910,22 @@
       loadPromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
       loadPromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
       loadPromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+      for(var bl = 1; bl <= 8; bl++){
+        bgPaid[bl] = lsGet('fc_bg' + bl) === '1';
+        loadPromo(bgPromos[bl], 'fc_bg' + bl + '_claimed', 'fc_bg' + bl + '_left');
+      }
+      var savedBg = parseInt(lsGet('fc_bg'), 10);
+      if(!isNaN(savedBg) && savedBg >= 0 && savedBg <= 8) bgIndex = savedBg;
       var savedSkin = parseInt(lsGet('fc_skin'), 10);
       if(!isNaN(savedSkin) && savedSkin >= 0 && savedSkin < SKINS.length) skinIndex = savedSkin;
       var savedChar = lsGet('fc_character');
       if(savedChar) character = savedChar;
+      var savedLevel = parseInt(lsGet('fc_current_level'), 10);
+      if(!isNaN(savedLevel) && savedLevel >= 1 && savedLevel <= 9) currentLevel = savedLevel;
+      var savedCamp = parseInt(lsGet('fc_campaign_unlocked'), 10);
+      if(!isNaN(savedCamp) && savedCamp >= 1 && savedCamp <= 9) campaignUnlocked = savedCamp;
+      try{ var lsStars = JSON.parse(lsGet('fc_level_stars') || '{}'); if(lsStars && typeof lsStars === 'object') levelStars = lsStars; }catch(e){}
+      try{ var lsChars = JSON.parse(lsGet('fc_level_chars') || '[]'); if(lsChars && lsChars.length) levelChars = lsChars; }catch(e){}
 
       /* ----- access checks (paid OR live promo trial) ----- */
       function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending; }
@@ -780,11 +941,52 @@
         for(var i = 0; i < CHARACTERS.length; i++) if(CHARACTERS[i].id === id) return CHARACTERS[i];
         return null;
       }
-      function charOn(id){ var d = charDef(id); return !!d && packOn(d.pack); }
+      function charOn(id){ var d = charDef(id); if(!d) return false; if(levelChars.indexOf(id) >= 0) return true; return packOn(d.pack); }
+      function bgOn(n){
+        if(n === 0) return true;
+        return !!(everyUnlocked || bgPaid[n] || bgPromos[n].active || bgPromos[n].pending);
+      }
+      /* A level is playable when the level before it was cleared (campaign),
+         or when its background is owned / on a promo trial (paid & codes
+         keep working exactly as before, now as level access too). */
+      function levelOn(n){
+        if(n <= 1) return true;
+        if(n <= campaignUnlocked) return true;
+        return bgOn(n - 1);
+      }
+      function levelRewardChar(n){ // character unlocked by clearing level n
+        return (n >= 1 && n <= 8) ? CHARACTERS[n - 1] : null;
+      }
+      function saveCampaign(){
+        lsSet('fc_current_level', String(currentLevel));
+        lsSet('fc_campaign_unlocked', String(campaignUnlocked));
+        lsSet('fc_level_stars', JSON.stringify(levelStars));
+        lsSet('fc_level_chars', JSON.stringify(levelChars));
+      }
+      function fmtClock(sec){
+        sec = Math.max(0, Math.floor(sec));
+        var m2 = Math.floor(sec / 60), s2 = sec % 60;
+        return m2 + ':' + (s2 < 10 ? '0' : '') + s2;
+      }
+      function starsForTime(n, t){
+        var L = LEVELS[n - 1];
+        if(t <= L.three) return 3;
+        if(t <= L.two) return 2;
+        return 1;
+      }
+      function starStr(n){
+        var out = '';
+        for(var si2 = 0; si2 < 3; si2++) out += si2 < n ? '★' : '☆';
+        return out;
+      }
       function validateSelection(){
         if(character !== 'bird' && !charOn(character)){
           character = 'bird';
           lsSet('fc_character', 'bird');
+        }
+        if(!bgOn(bgIndex)){
+          bgIndex = 0;
+          lsSet('fc_bg', '0');
         }
       }
       validateSelection();
@@ -801,6 +1003,12 @@
           if(params.get('pack' + pk) === 'success'){
             if(!packPaid[pk]){ packPaid[pk] = true; justBoughtPack = pk; lsSet('fc_pack' + pk, '1'); }
             params.delete('pack' + pk); dirty = true;
+          }
+        }
+        for(var bk = 1; bk <= 8; bk++){
+          if(params.get('bg' + bk) === 'success'){
+            if(!bgPaid[bk]){ bgPaid[bk] = true; justBoughtBg = bk; lsSet('fc_bg' + bk, '1'); }
+            params.delete('bg' + bk); dirty = true;
           }
         }
         if(dirty){
@@ -822,6 +1030,9 @@
         if(frogPromo.active && !frogPromo.pending) parts.push('FROG26 free time left: ' + fmtLeft(frogPromo.left) + ' of play');
         if(beePromo.active && !beePromo.pending) parts.push('BEE26 free time left: ' + fmtLeft(beePromo.left) + ' of play');
         if(ghostPromo.active && !ghostPromo.pending) parts.push('GHOST26 free time left: ' + fmtLeft(ghostPromo.left) + ' of play');
+        for(var bp = 1; bp <= 8; bp++){
+          if(bgPromos[bp].active && !bgPromos[bp].pending) parts.push(BGS[bp].code + ' free time left: ' + fmtLeft(bgPromos[bp].left) + ' of play');
+        }
         var els = document.querySelectorAll('[data-promo-time]');
         for(var i = 0; i < els.length; i++){
           els[i].textContent = parts.join('  ·  ');
@@ -836,6 +1047,8 @@
         for(var j = 0; j < lines.length; j++) lines[j].style.display = paidUnlocked ? '' : 'none';
         var pickers = document.querySelectorAll('[data-skin-picker]');
         for(var k = 0; k < pickers.length; k++) pickers[k].classList.add('show');
+        var bgPickers = document.querySelectorAll('[data-bg-picker]');
+        for(var g2 = 0; g2 < bgPickers.length; g2++) bgPickers[g2].classList.add('show');
         var buys = document.querySelectorAll('[data-pack-buy]');
         for(var u = 0; u < buys.length; u++){
           var bn = parseInt(buys[u].getAttribute('data-pack-buy'), 10);
@@ -853,12 +1066,18 @@
             var cid = btns[b].getAttribute('data-char');
             btns[b].classList.toggle('locked', !charOn(cid));
             isSel = (character === cid);
+          } else if(kind === 'bg'){
+            var bgn = parseInt(btns[b].getAttribute('data-bg'), 10);
+            btns[b].classList.toggle('locked', !bgOn(bgn) && !levelOn(bgn + 1));
+            isSel = (bgIndex === bgn);
           }
           btns[b].classList.toggle('sel', isSel);
         }
         var offers = document.querySelectorAll('[data-offer]');
         for(var o = 0; o < offers.length; o++) offers[o].style.display = 'none';
         refreshPromoTime();
+        updateLevelBar();
+        renderLevelPanels();
       }
       function makeOffer(picker){
         var offer = document.createElement('div');
@@ -981,6 +1200,126 @@
         }
       }
 
+      /* ----- Background picker (same pattern as characters: tap a locked
+         one to get its $0.99 Stripe offer) ----- */
+      function bgCodeIndex(code){
+        for(var i = 1; i <= 8; i++) if(BGS[i].code === code) return i;
+        return 0;
+      }
+      function showBgOffer(picker, n){
+        fillOffer(picker,
+          'Background \u2014 ' + BGS[n].name,
+          'Fly under the ' + BGS[n].name + ' sky \u2014 a whole new backdrop over the same town, traffic and rivers.',
+          '$0.99 one-time \u00b7 permanent unlock, yours on this device forever',
+          BGS[n].link,
+          'Get ' + BGS[n].name + ' \u2014 $0.99 \u2014 Checkout with Stripe');
+      }
+      function selectBackground(n, picker){
+        if(!bgOn(n) && !levelOn(n + 1)){
+          if(picker) showBgOffer(picker, n);
+          return;
+        }
+        bgIndex = n;
+        currentLevel = n + 1; // every background is its level
+        saveCampaign();
+        lsSet('fc_bg', String(n));
+        applyUnlockUI();
+        revealPlay(picker);
+      }
+      function buildBgPickers(){
+        var pickers = document.querySelectorAll('[data-bg-picker]');
+        for(var r = 0; r < pickers.length; r++){
+          (function(picker){
+            var row = picker.querySelector('.bg-row');
+            for(var n = 0; n <= 8; n++){
+              (function(idx){
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'skin-btn';
+                btn.setAttribute('data-kind', 'bg');
+                btn.setAttribute('data-bg', idx);
+                var nm = idx === 0 ? 'Classic Day' : BGS[idx].name;
+                btn.setAttribute('aria-label', 'Background: ' + nm);
+                var sw = document.createElement('span');
+                sw.className = 'bg-sw';
+                sw.style.background = idx === 0
+                  ? 'linear-gradient(180deg, #4aa8e8, #a8dcff 55%, #79c95a)'
+                  : 'linear-gradient(135deg, ' + BGS[idx].sw[0] + ', ' + BGS[idx].sw[1] + ' 55%, ' + BGS[idx].sw[2] + ')';
+                btn.appendChild(sw);
+                btn.appendChild(document.createTextNode(nm));
+                btn.addEventListener('click', function(){ selectBackground(idx, picker); });
+                row.appendChild(btn);
+              })(n);
+            }
+            makeOffer(picker);
+          })(pickers[r]);
+        }
+      }
+
+      /* ----- Campaign level panels (start screen) ----- */
+      function updateLevelBar(){
+        var L = LEVELS[currentLevel - 1];
+        if(!L) return;
+        var nm = document.getElementById('lvName');
+        if(nm) nm.textContent = 'Level ' + currentLevel + ' · ' + L.name;
+        var pg = document.getElementById('lvProg');
+        if(pg) pg.textContent = 'Target: ' + L.target + ' pts · ★★★ in ' + fmtClock(L.three) + ' · ★★ in ' + fmtClock(L.two);
+        var tm = document.getElementById('lvTime');
+        if(tm) tm.textContent = 'Time: ' + fmtClock(runTime);
+      }
+      function renderLevelPanels(){
+        var grids = document.querySelectorAll('[data-level-grid]');
+        for(var g3 = 0; g3 < grids.length; g3++){
+          var cards = grids[g3].children;
+          for(var ci2 = 0; ci2 < cards.length; ci2++){
+            var n = parseInt(cards[ci2].getAttribute('data-level'), 10);
+            cards[ci2].classList.toggle('cur', n === currentLevel);
+            cards[ci2].classList.toggle('locked', !levelOn(n));
+            var st = cards[ci2].querySelector('.lc-stars');
+            if(st) st.textContent = starStr(levelStars[n] || 0);
+            var lk = cards[ci2].querySelector('.lc-lock');
+            if(lk) lk.textContent = levelOn(n) ? (n === currentLevel ? '▶ You are here' : 'Tap to play') : '🔒 Clear the level before it — or buy it below';
+          }
+        }
+        updateLevelBar();
+      }
+      function selectLevel(n, grid){
+        if(!levelOn(n)){
+          toast('🔒 Level ' + n + ' is locked — clear Level ' + (n - 1) + ' first, or buy it in the background picker below', 3200);
+          return;
+        }
+        currentLevel = n;
+        bgIndex = n - 1;
+        saveCampaign();
+        lsSet('fc_bg', String(bgIndex));
+        applyUnlockUI();
+        if(grid) revealPlay(grid);
+      }
+      function buildLevelPanels(){
+        var grids = document.querySelectorAll('[data-level-grid]');
+        for(var r2 = 0; r2 < grids.length; r2++){
+          (function(grid){
+            for(var n = 1; n <= 9; n++){
+              (function(lv){
+                var L = LEVELS[lv - 1];
+                var reward = levelRewardChar(lv);
+                var card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'level-card';
+                card.setAttribute('data-level', lv);
+                card.setAttribute('aria-label', 'Level ' + lv + ': ' + L.name);
+                var nm = document.createElement('div'); nm.className = 'lc-name'; nm.textContent = 'Level ' + lv + ' · ' + L.name; card.appendChild(nm);
+                var tg = document.createElement('div'); tg.textContent = 'Target: ' + L.target + ' pts' + (reward ? ' · Unlocks: ' + reward.name : ' · Final level'); card.appendChild(tg);
+                var st = document.createElement('div'); st.className = 'lc-stars'; st.textContent = starStr(0); card.appendChild(st);
+                var lk = document.createElement('div'); lk.className = 'lc-lock'; card.appendChild(lk);
+                card.addEventListener('click', function(){ selectLevel(lv, grid); });
+                grid.appendChild(card);
+              })(n);
+            }
+          })(grids[r2]);
+        }
+      }
+
       /* ---------------- Promo codes (device-only, timed play time) ---------------- */
       function claimPromo(store, show, okText){
         store.claimed = true;
@@ -1016,7 +1355,7 @@
                   everyUnlocked = true;
                   lsSet('fc_every_unlocked', '1');
                   applyUnlockUI();
-                  show('Everything unlocked! All bird colors and all 4 character packs are yours on this device.', true);
+                  show('Everything unlocked! All bird colors, all 4 character packs and all 8 backgrounds are yours on this device.', true);
                   if(input) input.value = '';
                 }
               } else if(code === 'FLYAWAY26'){
@@ -1084,6 +1423,20 @@
                   claimPromo(ghostPromo, show, 'Free time started! Robot & Ghost unlocked for 30 minutes of play time.');
                   if(input) input.value = '';
                 }
+              } else if(bgCodeIndex(code) > 0){
+                var bn3 = bgCodeIndex(code);
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(bgPaid[bn3]){
+                  show(BGS[bn3].name + ' background already yours — permanently ✓', true);
+                } else if(bgPromos[bn3].active){
+                  show('Free time already running — ' + fmtLeft(bgPromos[bn3].left) + ' of play left', true);
+                } else if(bgPromos[bn3].claimed){
+                  show(BGS[bn3].code + "'s free time has already been used on this device", false);
+                } else {
+                  claimPromo(bgPromos[bn3], show, 'Free time started! The ' + BGS[bn3].name + ' background is unlocked for 30 minutes of play time — pick it in the background picker below.');
+                  if(input) input.value = '';
+                }
               } else {
                 show("That code isn't valid — try again", false);
               }
@@ -1110,10 +1463,12 @@
         tickPromo(frogPromo, dt);
         tickPromo(beePromo, dt);
         tickPromo(ghostPromo, dt);
+        var anyBg = false;
+        for(var bt = 1; bt <= 8; bt++){ tickPromo(bgPromos[bt], dt); if(bgPromos[bt].active) anyBg = true; }
         promoSaveTimer += dt;
         if(promoSaveTimer >= 1){
           promoSaveTimer = 0;
-          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active){ savePromos(); refreshPromoTime(); }
+          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active || anyBg){ savePromos(); refreshPromoTime(); }
         }
       }
       /* Called when a run ends: any promo whose time ran out mid-run now locks. */
@@ -1124,6 +1479,9 @@
         if(frogPromo.pending){ frogPromo.pending = false; frogPromo.active = false; ended = true; }
         if(beePromo.pending){ beePromo.pending = false; beePromo.active = false; ended = true; }
         if(ghostPromo.pending){ ghostPromo.pending = false; ghostPromo.active = false; ended = true; }
+        for(var be = 1; be <= 8; be++){
+          if(bgPromos[be].pending){ bgPromos[be].pending = false; bgPromos[be].active = false; ended = true; }
+        }
         if(ended){
           savePromos();
           validateSelection();
@@ -1382,10 +1740,15 @@
 
       /* ---------------- Flow ---------------- */
       function startGame(){
+        if(!levelOn(currentLevel)) currentLevel = 1;
+        bgIndex = currentLevel - 1;
+        lsSet('fc_bg', String(bgIndex));
+        saveCampaign();
         reset();
         state = 'playing';
         startOverlay.classList.add('hidden');
         overOverlay.classList.add('hidden');
+        document.getElementById('winOverlay').classList.add('hidden');
         pausedTag.classList.remove('show');
         flapBtn.classList.add('on');
         audio();
@@ -1398,8 +1761,8 @@
         standingLog = null;
         bird.wing = 1;
         sfx.flap();
-        spawnParticles(bird.x - 10, bird.y + 10, 3, '#ffffff', 60, 0.35);
-        spawnParticles(bird.x - 12, bird.y + 8, 2, '#ffffff', 44, 0.6, 'feather');
+        spawnParticles(bird.x - 10, bird.y + 10, 4, '#ffffff', 70, 0.5);
+        spawnParticles(bird.x - 12, bird.y + 8, 4, '#ffffff', 52, 1.05, 'feather');
       }
       function togglePause(){
         if(state === 'playing'){
@@ -1414,6 +1777,70 @@
           startMusic();
         }
       }
+      function levelComplete(){
+        if(state !== 'playing') return;
+        state = 'complete';
+        stopMusic();
+        finalizePromoExpiry();
+        flapBtn.classList.remove('on');
+        sfx.win();
+        var L = LEVELS[currentLevel - 1];
+        var stars = starsForTime(currentLevel, runTime);
+        if(!levelStars[currentLevel] || stars > levelStars[currentLevel]) levelStars[currentLevel] = stars;
+        if(currentLevel < 9 && currentLevel + 1 > campaignUnlocked) campaignUnlocked = currentLevel + 1;
+        var reward = levelRewardChar(currentLevel);
+        var newChar = false;
+        if(reward && levelChars.indexOf(reward.id) < 0){ levelChars.push(reward.id); newChar = true; }
+        saveCampaign();
+        var isNewBest = score > best;
+        if(isNewBest) best = score;
+        updateHud();
+        document.getElementById('winLevelName').textContent = 'Level ' + currentLevel + ' · ' + L.name + ' — cleared!';
+        var ws = document.getElementById('winStars');
+        ws.innerHTML = '';
+        for(var wi = 0; wi < 3; wi++){
+          var sp = document.createElement('span');
+          if(wi >= stars) sp.className = 'off';
+          sp.textContent = '★';
+          ws.appendChild(sp);
+        }
+        document.getElementById('winStarNote').textContent = stars === 3
+          ? 'Blazing fast — you beat the ★★★ time of ' + fmtClock(L.three) + '!'
+          : (stars === 2
+            ? 'Quick! Under the ★★ time of ' + fmtClock(L.two) + ' — beat ' + fmtClock(L.three) + ' for ★★★.'
+            : 'Cleared in ' + fmtClock(runTime) + ' — beat ' + fmtClock(L.two) + ' for ★★ and ' + fmtClock(L.three) + ' for ★★★.');
+        document.getElementById('winScore').textContent = score;
+        document.getElementById('winTime').textContent = fmtClock(runTime);
+        document.getElementById('winTarget').textContent = L.target;
+        var box = document.getElementById('winCharBox');
+        document.getElementById('winCharMsg').textContent = '';
+        if(reward){
+          box.style.display = '';
+          document.getElementById('winCharTitle').textContent = newChar ? '🎉 New character unlocked!' : 'Character reward';
+          document.getElementById('winCharText').textContent = newChar
+            ? 'Clearing Level ' + currentLevel + ' unlocked the ' + reward.name + '! Want to play as the ' + reward.name + ' next?'
+            : 'The ' + reward.name + ' — the reward for this level — is already yours. Want to play as the ' + reward.name + ' next?';
+          var useBtn = document.getElementById('useCharBtn');
+          useBtn.textContent = 'Yes — play as the ' + reward.name;
+          useBtn.setAttribute('data-reward', reward.id);
+        } else {
+          box.style.display = 'none';
+        }
+        var nxtBtn = document.getElementById('nextLevelBtn');
+        var finNote = document.getElementById('winFinalNote');
+        if(currentLevel < 9){
+          nxtBtn.style.display = '';
+          nxtBtn.textContent = '▶ Next: Level ' + (currentLevel + 1) + ' · ' + LEVELS[currentLevel].name;
+          finNote.style.display = 'none';
+        } else {
+          nxtBtn.style.display = 'none';
+          finNote.style.display = '';
+        }
+        onRunFinished(isNewBest);
+        applyUnlockUI();
+        setTimeout(function(){ document.getElementById('winOverlay').classList.remove('hidden'); }, 550);
+      }
+
       function gameOver(reason, title){
         if(state !== 'playing') return;
         state = 'over';
@@ -1434,6 +1861,34 @@
         else if(score >= 20) medal = '🥈 Silver crosser';
         else if(score >= 10) medal = '🥉 Bronze crosser';
         document.getElementById('medalLine').textContent = medal;
+        // Level result, and the choice every crash offers: try again, or
+        // buy the next level ($0.99 Stripe link for its background) and
+        // skip ahead. If the next level is already unlocked, the button
+        // just takes you there instead.
+        var Lv = LEVELS[currentLevel - 1];
+        var pct = Math.min(100, Math.floor(score / Lv.target * 100));
+        document.getElementById('overStars').textContent = starStr(0);
+        document.getElementById('overLevelInfo').textContent =
+          'Level ' + currentLevel + ' · ' + Lv.name + ' — you scored ' + score + ' of the ' + Lv.target + '-point target (' + pct + '%) in ' + fmtClock(runTime) + '. Reach the target to unlock the next level' + (levelRewardChar(currentLevel) ? ' and the ' + levelRewardChar(currentLevel).name : '') + '.';
+        var wrap = document.getElementById('buyNextWrap');
+        var buyBtn = document.getElementById('buyNextBtn');
+        var goBtn = document.getElementById('goNextBtn');
+        if(currentLevel < 9){
+          wrap.style.display = '';
+          var nxt = currentLevel + 1;
+          if(levelOn(nxt)){
+            buyBtn.style.display = 'none';
+            goBtn.style.display = '';
+            goBtn.textContent = '▶ Play Level ' + nxt + ' · ' + LEVELS[nxt - 1].name + ' (already unlocked)';
+          } else {
+            goBtn.style.display = 'none';
+            buyBtn.style.display = '';
+            buyBtn.href = BGS[currentLevel].link;
+            buyBtn.textContent = 'Buy Level ' + nxt + ' · ' + LEVELS[nxt - 1].name + ' — $0.99 — Checkout with Stripe';
+          }
+        } else {
+          wrap.style.display = 'none';
+        }
         onRunFinished(isNewBest);
         setTimeout(function(){ overOverlay.classList.remove('hidden'); }, 550);
       }
@@ -1443,8 +1898,8 @@
         for(var i = 0; i < n; i++){
           particles.push({
             x: x, y: y, vx: rand(-spread, spread), vy: rand(-spread, spread * 0.4),
-            life: life * rand(0.6, 1.1), max: life, color: color, r: rand(2, 4.5),
-            kind: kind || 'dot', rot: rand(0, 6.28), vr: rand(-7, 7)
+            life: life * rand(0.75, 1.25), max: life, color: color, r: rand(3.2, 6.8),
+            kind: kind || 'dot', rot: rand(0, 6.28), vr: rand(-9, 9)
           });
         }
       }
@@ -1467,7 +1922,11 @@
       function update(dt){
         time += dt;
         tickPromos(dt);
-        speed = Math.min(150 + score * 2.4, 268);
+        runTime += dt;
+        // Progressive difficulty: each level starts faster, ramps harder
+        // and tops out quicker than the one before.
+        speed = Math.min(150 + (currentLevel - 1) * 9 + score * (2.4 + (currentLevel - 1) * 0.18), 268 + (currentLevel - 1) * 10);
+        updateLevelBar();
         dist += speed * dt;
         var shift = speed * dt;
 
@@ -1541,8 +2000,8 @@
               es.egg.taken = true; score += 3; updateHud();
               toast('🥚 Golden egg +3');
               sfx.egg();
-              spawnParticles(ex, ey, 10, '#ffd76a', 90, 0.5);
-              spawnParticles(ex, ey, 6, '#ffe98a', 64, 0.65, 'star');
+              spawnParticles(ex, ey, 14, '#ffbf00', 110, 0.75);
+              spawnParticles(ex, ey, 10, '#ffe600', 84, 1.05, 'star');
             }
           }
         }
@@ -1554,8 +2013,8 @@
             var car = as.cars[aj];
             var carX = as.x + car.dx, carY = GROUND - car.h;
             if(circleRect(bx, by, br - 2, carX, carY, car.w, car.h)){
-              spawnParticles(bx, by, 16, '#e8433c', 150, 0.6);
-              spawnParticles(bx, by, 7, '#fdf6ec', 120, 0.85, 'feather');
+              spawnParticles(bx, by, 22, '#e8433c', 170, 0.85);
+              spawnParticles(bx, by, 12, '#ffffff', 140, 1.35, 'feather');
               sfx.crash();
               gameOver('You clipped a car. The driver is fine. You are feathers.', 'Splat!');
               return;
@@ -1584,8 +2043,8 @@
                 tw.pig = false; pigs++; score += 5; updateHud();
                 toast('🐷 Pig popped +5');
                 sfx.pop();
-                spawnParticles(bx, tTop - 6, 14, '#57c84b', 130, 0.55);
-                spawnParticles(bx, tTop - 8, 5, '#ffd76a', 84, 0.55, 'star');
+                spawnParticles(bx, tTop - 6, 20, '#22c55e', 150, 0.8);
+                spawnParticles(bx, tTop - 8, 9, '#ffe600', 104, 0.95, 'star');
               } else {
                 sfx.thud();
                 spawnParticles(bx, tTop, 8, '#b07a3f', 110, 0.45);
@@ -1626,12 +2085,20 @@
           }
         } else if(bottom >= GROUND){
           if(standingLog){ standingLog = null; }
-          spawnParticles(bx, GROUND, 14, '#e8433c', 130, 0.55);
-          spawnParticles(bx, GROUND - 6, 7, '#fdf6ec', 110, 0.85, 'feather');
+          spawnParticles(bx, GROUND, 20, '#e8433c', 150, 0.8);
+          spawnParticles(bx, GROUND - 6, 12, '#ffffff', 130, 1.35, 'feather');
           sfx.thud();
           gameOver(under && under.type === 'road'
             ? 'You landed in traffic. Bold choice.'
             : 'You met the ground at speed. The ground won.', 'Thud!');
+          return;
+        }
+
+        // Level target reached? Checked once per frame, which covers
+        // every scoring source: crossed segments, eggs, near misses, pigs.
+        if(!levelDone && score >= LEVELS[currentLevel - 1].target){
+          levelDone = true;
+          levelComplete();
           return;
         }
 
@@ -1741,13 +2208,15 @@
         ctx.beginPath(); ctx.ellipse(x + w / 2, y + h + 4, w * 0.52, 5, 0, 0, 7); ctx.fill();
         if(car.dir < 0){ ctx.translate(x + w, y); ctx.scale(-1, 1); x = 0; y = 0; }
         else { ctx.translate(x, y); x = 0; y = 0; }
-        // exhaust puffs drifting out of the tailpipe (rear is the local x=0 side)
+        // exhaust puffs drifting out of the tailpipe (rear is the local x=0 side) — thick and smoky
         var eseed = (w % 9) / 9;
-        for(var ep = 0; ep < 3; ep++){
-          var eage = (time * 0.9 + ep / 3 + eseed) % 1;
-          ctx.globalAlpha = 0.26 * (1 - eage);
-          ctx.fillStyle = '#cfd8de';
-          ctx.beginPath(); ctx.arc(x - 3 - eage * 24, y + h - 4 - eage * 7, 2.4 + eage * 5.5, 0, 7); ctx.fill();
+        for(var ep = 0; ep < 5; ep++){
+          var eage = (time * 0.85 + ep / 5 + eseed) % 1;
+          ctx.globalAlpha = 0.68 * (1 - eage) + 0.08;
+          ctx.fillStyle = ep % 2 ? '#7d8a96' : '#5f6d7a';
+          ctx.beginPath(); ctx.arc(x - 4 - eage * 36, y + h - 4 - eage * 11, 3.6 + eage * 10, 0, 7); ctx.fill();
+          ctx.fillStyle = 'rgba(230,238,244,.5)';
+          ctx.beginPath(); ctx.arc(x - 5 - eage * 36, y + h - 6 - eage * 11, (3.6 + eage * 10) * 0.5, 0, 7); ctx.fill();
         }
         ctx.globalAlpha = 1;
         // body — main shell + darker lower skirt + glossy top highlight
@@ -1875,14 +2344,15 @@
         ctx.closePath(); ctx.fill();
         ctx.fillStyle = skin.dark;
         ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(-20, 0.5); ctx.lineTo(-13, 3.5); ctx.closePath(); ctx.fill();
-        // body — shaded sphere with outline + glossy highlight
+        // body — strongly shaded sphere with bold outline + glossy highlight
         var bg2 = ctx.createRadialGradient(-5, -6, 2, 0, 0, bird.r + 3);
-        bg2.addColorStop(0, skin.body); bg2.addColorStop(0.55, skin.body); bg2.addColorStop(1, skin.dark);
+        bg2.addColorStop(0, skin.body); bg2.addColorStop(0.45, skin.body); bg2.addColorStop(0.78, skin.dark); bg2.addColorStop(1, skin.tail);
         ctx.fillStyle = bg2;
         ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.fill();
-        ctx.fillStyle = 'rgba(0,0,0,.10)'; ctx.beginPath(); ctx.ellipse(1, 6, 12, 8, 0, 0, Math.PI); ctx.fill();
-        ctx.strokeStyle = 'rgba(90,15,10,.28)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.beginPath(); ctx.ellipse(-5, -8, 6, 3.6, -0.5, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(1, 6, 12, 8, 0, 0, Math.PI); ctx.fill();
+        ctx.strokeStyle = 'rgba(40,5,0,.72)'; ctx.lineWidth = 2.8; ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.72)'; ctx.beginPath(); ctx.ellipse(-5, -8, 7.5, 4.6, -0.5, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.ellipse(-6, -9, 3.2, 2, -0.5, 0, 7); ctx.fill();
         // belly
         ctx.fillStyle = '#fdeeda';
         ctx.beginPath(); ctx.ellipse(3, 7, 8.5, 6, 0, 0, 7); ctx.fill();
@@ -1890,12 +2360,14 @@
         // crest
         ctx.strokeStyle = skin.dark; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(-3, -13); ctx.lineTo(-5, -20); ctx.moveTo(2, -14); ctx.lineTo(3, -21); ctx.stroke();
-        // wing
+        // wing — darker, outlined, high contrast
         var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
         ctx.save();
         ctx.translate(-4, 1); ctx.rotate(flapA);
-        ctx.fillStyle = skin.dark;
-        ctx.beginPath(); ctx.ellipse(-6, 3, 9.5, 5.5, 0.5, 0, 7); ctx.fill();
+        ctx.fillStyle = skin.tail;
+        ctx.beginPath(); ctx.ellipse(-6, 3, 10.5, 6.2, 0.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(40,5,0,.55)'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.ellipse(-6, 3, 10.5, 6.2, 0.5, 0, 7); ctx.stroke();
         ctx.restore();
         // beak
         ctx.fillStyle = '#f7b731';
@@ -2291,17 +2763,277 @@
         else drawBird();
       }
 
-      function draw(){
-        // ---- Sky: rich dawn-to-day gradient ----
+      /* ---------------- Backgrounds (backdrop scenery only — the town,
+         traffic and rivers below the horizon play the same in every one).
+         Index 0 is the free Classic Day; 1–8 are the purchasable themes. */
+      function currentBg(){ return (bgOn(bgIndex) || levelOn(bgIndex + 1)) ? bgIndex : 0; }
+      function skyFill(stops){
+        var g = ctx.createLinearGradient(0, 0, 0, VH);
+        for(var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+      }
+      function hillPath(amp, off, wob){
+        ctx.beginPath(); ctx.moveTo(0, GROUND);
+        for(var x = 0; x <= VW; x += 20){
+          ctx.lineTo(x, GROUND - amp - Math.sin((x + off) * 0.02) * amp * 0.45 - Math.sin((x + off) * 0.006) * (wob || 8));
+        }
+        ctx.lineTo(VW, GROUND); ctx.closePath();
+      }
+      function ridgePath(hBase, hVar, off){
+        ctx.beginPath(); ctx.moveTo(0, GROUND);
+        for(var x = -20; x <= VW + 20; x += 20){
+          ctx.lineTo(x, GROUND - hBase - Math.abs(Math.sin((x + off) * 0.018)) * hVar - Math.sin((x + off) * 0.05) * 9);
+        }
+        ctx.lineTo(VW, GROUND); ctx.closePath();
+      }
+      function starField(n, seed, twinkle){
+        for(var i = 0; i < n; i++){
+          var sx2 = (i * 67 + seed * 131) % VW;
+          var sy2 = (i * 41 + seed * 57) % 330 + 8;
+          var a = twinkle ? 0.35 + 0.6 * Math.abs(Math.sin(time * 1.7 + i * 1.3)) : 0.8;
+          ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(sx2, sy2, i % 3 === 0 ? 2 : 1.2, 0, 7); ctx.fill();
+        }
+      }
+      function skyBirds(color){
+        ctx.strokeStyle = color; ctx.lineWidth = 3.8; ctx.lineCap = 'round';
+        for(var fb = 0; fb < 4; fb++){
+          var fbx = VW + 60 - ((time * (13 + fb * 4) + fb * 170) % (VW + 160));
+          var fby = 42 + fb * 30 + Math.sin(time * 1.3 + fb * 2.2) * 7;
+          var fw3 = Math.sin(time * 9 + fb * 1.7) * 6;
+          ctx.beginPath();
+          ctx.moveTo(fbx - 16, fby + fw3);
+          ctx.quadraticCurveTo(fbx - 7, fby - 7 - fw3, fbx, fby);
+          ctx.quadraticCurveTo(fbx + 7, fby - 7 - fw3, fbx + 16, fby + fw3);
+          ctx.stroke();
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.ellipse(fbx, fby, 3.2, 2.2, 0, 0, 7); ctx.fill();
+        }
+      }
+      function pineRow(hgt, color, off, spacing){
+        ctx.fillStyle = color;
+        ctx.fillRect(0, GROUND - 5, VW, 5);
+        for(var x = -spacing + off; x < VW + spacing; x += spacing){
+          ctx.beginPath();
+          ctx.moveTo(x - hgt * 0.42, GROUND);
+          ctx.lineTo(x, GROUND - hgt);
+          ctx.lineTo(x + hgt * 0.42, GROUND);
+          ctx.closePath(); ctx.fill();
+          ctx.fillRect(x - 2, GROUND - hgt * 0.16, 4, hgt * 0.16);
+        }
+      }
+      function drawSunset(){
+        skyFill([[0, '#2e1a47'], [0.34, '#7a2d5e'], [0.58, '#d6455a'], [0.78, '#ff7a3c'], [0.94, '#ffb347'], [1, '#ffcf7a']]);
+        // big low sun sinking toward the hills
+        var sx = VW * 0.30, sy = GROUND - 118;
+        var sg = ctx.createRadialGradient(sx, sy, 6, sx, sy, 125);
+        sg.addColorStop(0, 'rgba(255,190,90,.95)'); sg.addColorStop(0.4, 'rgba(255,140,60,.45)'); sg.addColorStop(1, 'rgba(255,120,50,0)');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 125, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffd76a'; ctx.beginPath(); ctx.arc(sx, sy, 34, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, 7); ctx.fill();
+        // warm dark cloud wisps
+        ctx.fillStyle = 'rgba(90,30,80,.5)';
+        for(var i = 0; i < clouds.length; i++){
+          var c = clouds[i];
+          ctx.beginPath();
+          ctx.ellipse(c.x + 20 * c.s, c.y, 40 * c.s, 8 * c.s, 0, 0, 7);
+          ctx.ellipse(c.x + 6 * c.s, c.y - 5 * c.s, 22 * c.s, 7 * c.s, 0, 0, 7);
+          ctx.fill();
+        }
+        skyBirds('rgba(35,12,45,.85)');
+        ctx.fillStyle = '#5b2a5e'; ridgePath(84, 66, dist * 0.08); ctx.fill();
+        ctx.fillStyle = '#3a1c47'; hillPath(30, dist * 0.28, 8); ctx.fill();
+      }
+      function drawMidnight(){
+        skyFill([[0, '#050914'], [0.5, '#0b1633'], [0.8, '#14264f'], [1, '#1d3a6b']]);
+        starField(90, 3, true);
+        // crescent moon with a soft glow
+        var mx = VW - 64, my = 58;
+        var mg = ctx.createRadialGradient(mx, my, 4, mx, my, 54);
+        mg.addColorStop(0, 'rgba(230,240,255,.5)'); mg.addColorStop(1, 'rgba(230,240,255,0)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, 54, 0, 7); ctx.fill();
+        ctx.fillStyle = '#f4f8ff'; ctx.beginPath(); ctx.arc(mx, my, 21, 0, 7); ctx.fill();
+        ctx.fillStyle = '#0b1633'; ctx.beginPath(); ctx.arc(mx + 9, my - 5, 17, 0, 7); ctx.fill();
+        // dark skyline, windows lit for the night
+        ctx.fillStyle = '#0a1226';
+        var off = -(dist * 0.16) % 96;
+        for(var bx = off - 96; bx < VW + 96; bx += 96){
+          var bh = 60 + ((Math.floor((bx + dist * 0.16) / 96) * 37) % 40);
+          ctx.fillRect(bx + 4, GROUND - bh - 30, 38, bh + 30);
+          ctx.fillRect(bx + 50, GROUND - bh - 8, 28, bh + 8);
+          ctx.fillStyle = '#ffd76a';
+          for(var wy2 = 0; wy2 < 5; wy2++){
+            for(var wx2 = 0; wx2 < 3; wx2++){
+              var seed = Math.floor((bx + dist * 0.16) / 96) * 31 + wy2 * 7 + wx2 * 13;
+              if(seed % 3 !== 0) ctx.fillRect(bx + 10 + wx2 * 11, GROUND - bh - 20 + wy2 * 15, 5, 6);
+            }
+          }
+          ctx.fillStyle = '#0a1226';
+        }
+        ctx.fillStyle = '#0d1a36'; hillPath(24, dist * 0.28, 6); ctx.fill();
+      }
+      function drawSnowy(){
+        skyFill([[0, '#a8cdec'], [0.45, '#cfe6f7'], [0.8, '#eaf5fd'], [1, '#ffffff']]);
+        ctx.fillStyle = 'rgba(255,244,190,.85)'; ctx.beginPath(); ctx.arc(VW - 56, 54, 20, 0, 7); ctx.fill();
+        for(var i = 0; i < clouds.length; i++) drawCloud(clouds[i].x, clouds[i].y, clouds[i].s);
+        // big pale peaks with bright snow caps
+        ctx.fillStyle = '#dceefb'; ridgePath(130, 88, dist * 0.08); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        for(var cap = 0; cap < 5; cap++){
+          var capX = ((cap * 137 - (dist * 0.08) % 137) + VW + 137) % (VW + 80) - 40;
+          var capY = GROUND - 200 - Math.sin(cap * 2.1) * 16;
+          ctx.beginPath(); ctx.moveTo(capX - 16, capY + 16); ctx.lineTo(capX, capY); ctx.lineTo(capX + 16, capY + 16); ctx.lineTo(capX + 6, capY + 9); ctx.lineTo(capX, capY + 14); ctx.lineTo(capX - 6, capY + 9); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = '#f4faff'; hillPath(26, dist * 0.28, 6); ctx.fill();
+        // falling snow
+        ctx.fillStyle = 'rgba(255,255,255,.95)';
+        for(var sn = 0; sn < 46; sn++){
+          var snx = ((sn * 53 + Math.sin(time * 0.7 + sn) * 14) % VW + VW) % VW;
+          var sny = (sn * 89 + time * 36 * (0.6 + (sn % 5) * 0.12)) % (GROUND + 10);
+          ctx.beginPath(); ctx.arc(snx, sny, sn % 4 === 0 ? 2.6 : 1.6, 0, 7); ctx.fill();
+        }
+      }
+      function drawDesert(){
+        skyFill([[0, '#7ec3ee'], [0.4, '#bfe3f7'], [0.68, '#ffe9b0'], [0.88, '#ffd98a'], [1, '#ffc46b']]);
+        // hot high sun
+        var sx = 64, sy = 56;
+        var sg = ctx.createRadialGradient(sx, sy, 4, sx, sy, 66);
+        sg.addColorStop(0, 'rgba(255,240,170,.9)'); sg.addColorStop(1, 'rgba(255,220,120,0)');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 66, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffdf6b'; ctx.beginPath(); ctx.arc(sx, sy, 24, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(sx - 3, sy - 3, 15, 0, 7); ctx.fill();
+        // layered dunes
+        ctx.fillStyle = '#eeb95f'; hillPath(58, dist * 0.1, 16); ctx.fill();
+        ctx.fillStyle = '#e09a35'; hillPath(38, dist * 0.2, 12); ctx.fill();
+        // cactus silhouettes standing on the mid dune
+        ctx.fillStyle = '#a5661d';
+        for(var cx2 = -((dist * 0.2) % 300) - 40; cx2 < VW + 60; cx2 += 300){
+          var cyB = GROUND - 22;
+          rr(cx2, cyB - 44, 10, 44, 5); ctx.fill();
+          rr(cx2 - 9, cyB - 34, 7, 16, 3.5); ctx.fill();
+          ctx.fillRect(cx2 - 9, cyB - 20, 12, 5);
+          rr(cx2 + 12, cyB - 38, 7, 20, 3.5); ctx.fill();
+          ctx.fillRect(cx2 + 2, cyB - 22, 13, 5);
+        }
+        ctx.fillStyle = '#c97e2c'; hillPath(20, dist * 0.3, 8); ctx.fill();
+      }
+      function drawForest(){
+        skyFill([[0, '#9fd8b4'], [0.5, '#c4ecd2'], [0.85, '#e6f7e4'], [1, '#f2fbe9']]);
+        ctx.fillStyle = 'rgba(255,250,200,.55)'; ctx.beginPath(); ctx.arc(VW * 0.72, 60, 30, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(0, GROUND - 124, VW, 26);
+        pineRow(120, '#7fb98a', -((dist * 0.08) % 54), 54);
+        pineRow(84, '#3f7d4e', -((dist * 0.16) % 46), 46);
+        ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(0, GROUND - 64, VW, 16);
+        pineRow(52, '#1d5233', -((dist * 0.28) % 40), 40);
+      }
+      function drawOceanBg(){
+        skyFill([[0, '#3fb6d9'], [0.45, '#7fe0f2'], [0.75, '#c9f6ff'], [1, '#eafcff']]);
+        ctx.fillStyle = 'rgba(255,243,176,.4)'; ctx.beginPath(); ctx.arc(60, 52, 30, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(60, 52, 19, 0, 7); ctx.fill();
+        for(var i = 0; i < clouds.length; i++) drawCloud(clouds[i].x, clouds[i].y, clouds[i].s);
+        // the sea itself, a band at the horizon behind the town
+        var sg2 = ctx.createLinearGradient(0, GROUND - 52, 0, GROUND);
+        sg2.addColorStop(0, '#2f9fd8'); sg2.addColorStop(1, '#1673ad');
+        ctx.fillStyle = sg2; ctx.fillRect(0, GROUND - 52, VW, 52);
+        ctx.fillStyle = 'rgba(255,255,255,.7)';
+        for(var sk2 = 0; sk2 < 26; sk2++){
+          ctx.fillRect((sk2 * 47 + Math.floor(time * 1.2) * 13) % VW, GROUND - 46 + ((sk2 * 23) % 40), 6, 2);
+        }
+        // palm islands drifting by
+        ctx.fillStyle = '#2e8f66';
+        var islOff = -((dist * 0.14) % 340);
+        for(var ix = islOff - 40; ix < VW + 120; ix += 340){
+          ctx.beginPath(); ctx.ellipse(ix + 60, GROUND - 50, 62, 13, 0, Math.PI, 0); ctx.fill();
+          ctx.strokeStyle = '#2e8f66'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(ix + 60, GROUND - 58); ctx.quadraticCurveTo(ix + 64, GROUND - 76, ix + 70, GROUND - 82); ctx.stroke();
+          ctx.lineWidth = 3;
+          for(var fr = 0; fr < 5; fr++){
+            var fa = -0.4 - fr * 0.5;
+            ctx.beginPath(); ctx.moveTo(ix + 70, GROUND - 82);
+            ctx.quadraticCurveTo(ix + 70 + Math.cos(fa) * 13, GROUND - 86 + Math.sin(fa) * 10, ix + 70 + Math.cos(fa) * 20, GROUND - 79 + Math.sin(fa) * 15);
+            ctx.stroke();
+          }
+        }
+        // a little sailboat crossing the horizon
+        var boatX = ((time * 14) % (VW + 160)) - 80;
+        var boatY = GROUND - 56 + Math.sin(time * 1.6) * 2;
+        ctx.fillStyle = '#c65d3a';
+        ctx.beginPath(); ctx.moveTo(boatX - 13, boatY); ctx.lineTo(boatX + 13, boatY); ctx.lineTo(boatX + 8, boatY + 6); ctx.lineTo(boatX - 8, boatY + 6); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.moveTo(boatX, boatY - 2); ctx.lineTo(boatX, boatY - 20); ctx.lineTo(boatX + 11, boatY - 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffe9a8';
+        ctx.beginPath(); ctx.moveTo(boatX - 2, boatY - 2); ctx.lineTo(boatX - 2, boatY - 15); ctx.lineTo(boatX - 10, boatY - 2); ctx.closePath(); ctx.fill();
+      }
+      function drawAutumn(){
+        skyFill([[0, '#f7b733'], [0.45, '#fc9a4a'], [0.75, '#ffd9a0'], [1, '#ffedc9']]);
+        ctx.fillStyle = 'rgba(255,236,170,.85)'; ctx.beginPath(); ctx.arc(VW - 60, 56, 21, 0, 7); ctx.fill();
+        for(var i = 0; i < clouds.length; i++){
+          ctx.globalAlpha = 0.7; drawCloud(clouds[i].x, clouds[i].y, clouds[i].s); ctx.globalAlpha = 1;
+        }
+        // hills in full fall color
+        ctx.fillStyle = '#d96f2e'; hillPath(64, dist * 0.1, 14); ctx.fill();
+        ctx.fillStyle = '#b84e1f'; hillPath(40, dist * 0.2, 10); ctx.fill();
+        ctx.fillStyle = '#8f3b1d'; hillPath(22, dist * 0.3, 8); ctx.fill();
+        // leaves on the wind
+        var leafCols = ['#e8433c', '#f5a623', '#ffd94d', '#c65d3a', '#9ecb45'];
+        for(var lf = 0; lf < 26; lf++){
+          var lfx = ((lf * 61 + Math.sin(time * 0.9 + lf * 1.7) * 20) % VW + VW) % VW;
+          var lfy = (lf * 97 + time * 30 * (0.5 + (lf % 4) * 0.15)) % (GROUND + 8);
+          ctx.save(); ctx.translate(lfx, lfy); ctx.rotate(time * 2 + lf);
+          ctx.fillStyle = leafCols[lf % leafCols.length];
+          ctx.beginPath(); ctx.ellipse(0, 0, 4.6, 2.8, 0, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+      function drawSpace(){
+        skyFill([[0, '#070313'], [0.5, '#150a33'], [0.8, '#24104d'], [1, '#33165e']]);
+        // nebula glows
+        var nb1 = ctx.createRadialGradient(VW * 0.24, 120, 6, VW * 0.24, 120, 120);
+        nb1.addColorStop(0, 'rgba(150,70,220,.35)'); nb1.addColorStop(1, 'rgba(150,70,220,0)');
+        ctx.fillStyle = nb1; ctx.fillRect(0, 0, VW, 300);
+        var nb2 = ctx.createRadialGradient(VW * 0.8, 210, 6, VW * 0.8, 210, 100);
+        nb2.addColorStop(0, 'rgba(60,180,230,.28)'); nb2.addColorStop(1, 'rgba(60,180,230,0)');
+        ctx.fillStyle = nb2; ctx.fillRect(VW * 0.8 - 100, 110, 200, 200);
+        starField(120, 7, true);
+        // ringed planet
+        var px = 74, py = 74;
+        ctx.fillStyle = '#e8a2c8'; ctx.beginPath(); ctx.arc(px, py, 24, 0, 7); ctx.fill();
+        ctx.fillStyle = '#d17fb2'; ctx.beginPath(); ctx.arc(px - 6, py + 8, 8, 0, 7); ctx.arc(px + 10, py - 6, 6, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,220,160,.85)'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.ellipse(px, py, 40, 11, -0.35, 0, 7); ctx.stroke();
+        // cratered moon
+        ctx.fillStyle = '#e8ecf4'; ctx.beginPath(); ctx.arc(VW - 58, 60, 17, 0, 7); ctx.fill();
+        ctx.fillStyle = '#c6cedd'; ctx.beginPath(); ctx.arc(VW - 64, 55, 3.6, 0, 7); ctx.arc(VW - 52, 66, 2.8, 0, 7); ctx.fill();
+        // shooting star every few seconds
+        var cyc = time % 7;
+        if(cyc < 0.9){
+          var shx = VW - 40 - cyc * 260, shy = 40 + cyc * 130;
+          ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(shx, shy); ctx.lineTo(shx + 34, shy - 15); ctx.stroke();
+        }
+        ctx.fillStyle = '#3a2066'; ridgePath(88, 70, dist * 0.08); ctx.fill();
+        ctx.fillStyle = '#241243'; hillPath(26, dist * 0.28, 7); ctx.fill();
+      }
+      function drawBackdrop(){
+        var t = currentBg();
+        if(t === 1){ drawSunset(); return; }
+        if(t === 2){ drawMidnight(); return; }
+        if(t === 3){ drawSnowy(); return; }
+        if(t === 4){ drawDesert(); return; }
+        if(t === 5){ drawForest(); return; }
+        if(t === 6){ drawOceanBg(); return; }
+        if(t === 7){ drawAutumn(); return; }
+        if(t === 8){ drawSpace(); return; }
+        // ---- Classic Day: rich dawn-to-day gradient ----
         var g = ctx.createLinearGradient(0, 0, 0, VH);
         g.addColorStop(0, '#4aa8e8'); g.addColorStop(0.35, '#7ec8f7'); g.addColorStop(0.62, '#a8dcff'); g.addColorStop(0.85, '#d6f2ff'); g.addColorStop(1, '#eaf9ff');
         ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
         // Faint rainbow arcing over the town (ends tuck behind the hills)
-        var rbCols = ['#ff5a4e', '#ff9a3c', '#ffd94d', '#57c84b', '#4aa8e8'];
-        ctx.lineWidth = 5; ctx.globalAlpha = 0.09;
+        var rbCols = ['#ff2d20', '#ff7a00', '#ffd400', '#1ecb4f', '#1e8cff'];
+        ctx.lineWidth = 11; ctx.globalAlpha = 0.68;
         for(var rb = 0; rb < rbCols.length; rb++){
           ctx.strokeStyle = rbCols[rb];
-          ctx.beginPath(); ctx.arc(VW * 0.16, GROUND + 116, 300 - rb * 6, Math.PI * 1.03, Math.PI * 1.93); ctx.stroke();
+          ctx.beginPath(); ctx.arc(VW * 0.16, GROUND + 116, 304 - rb * 11, Math.PI * 1.03, Math.PI * 1.93); ctx.stroke();
         }
         ctx.globalAlpha = 1;
         // Sun — glow, turning rays, bright core
@@ -2320,16 +3052,18 @@
         for(var i = 0; i < clouds.length; i++) drawCloud(clouds[i].x, clouds[i].y, clouds[i].s);
         // Distant birds crossing the sky, wings flapping (positions ride on
         // `time`, so they drift by on the start screen too)
-        ctx.strokeStyle = 'rgba(38,64,92,.55)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-        for(var fb = 0; fb < 3; fb++){
-          var fbx = VW + 60 - ((time * (13 + fb * 4) + fb * 190) % (VW + 160));
-          var fby = 46 + fb * 32 + Math.sin(time * 1.3 + fb * 2.2) * 6;
-          var fw3 = Math.sin(time * 9 + fb * 1.7) * 3.6;
+        ctx.strokeStyle = 'rgba(18,38,62,.92)'; ctx.lineWidth = 3.8; ctx.lineCap = 'round';
+        for(var fb = 0; fb < 4; fb++){
+          var fbx = VW + 60 - ((time * (13 + fb * 4) + fb * 170) % (VW + 160));
+          var fby = 42 + fb * 30 + Math.sin(time * 1.3 + fb * 2.2) * 7;
+          var fw3 = Math.sin(time * 9 + fb * 1.7) * 6;
           ctx.beginPath();
-          ctx.moveTo(fbx - 9, fby + fw3);
-          ctx.quadraticCurveTo(fbx - 4, fby - 4 - fw3, fbx, fby);
-          ctx.quadraticCurveTo(fbx + 4, fby - 4 - fw3, fbx + 9, fby + fw3);
+          ctx.moveTo(fbx - 16, fby + fw3);
+          ctx.quadraticCurveTo(fbx - 7, fby - 7 - fw3, fbx, fby);
+          ctx.quadraticCurveTo(fbx + 7, fby - 7 - fw3, fbx + 16, fby + fw3);
           ctx.stroke();
+          ctx.fillStyle = 'rgba(18,38,62,.92)';
+          ctx.beginPath(); ctx.ellipse(fbx, fby, 3.2, 2.2, 0, 0, 7); ctx.fill();
         }
         // ---- Parallax layers (scroll slower than the world) ----
         // Distant purple-blue mountains with snow caps
@@ -2367,6 +3101,10 @@
         }
         ctx.lineTo(VW, GROUND); ctx.closePath(); ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fillRect(0, GROUND - 42, VW, 5);
+      }
+
+      function draw(){
+        drawBackdrop();
 
         // ---- World segments ----
         for(var si = 0; si < segments.length; si++){
@@ -2405,16 +3143,21 @@
               for(var pet = 0; pet < 5; pet++){ var pa = pet / 5 * Math.PI * 2; ctx.beginPath(); ctx.arc(fx + Math.cos(pa) * 3 * fo.s, fy - 3 + Math.sin(pa) * 3 * fo.s, 2.1 * fo.s, 0, 7); ctx.fill(); }
               ctx.fillStyle = '#ffcf3f'; ctx.beginPath(); ctx.arc(fx, fy - 3, 1.7 * fo.s, 0, 7); ctx.fill();
             }
-            // butterflies fluttering over the grass
+            // butterflies fluttering over the grass — big, bold wings
             for(var bf2 = 0; bf2 < s.butterflies.length; bf2++){
               var bo = s.butterflies[bf2];
-              var bx3 = s.x + bo.dx + Math.sin(time * 0.9 + bo.ph) * 16;
-              var by3 = GROUND - 24 + Math.sin(time * 1.7 + bo.ph * 1.3) * 9 + Math.sin(time * 3.1 + bo.ph) * 3;
-              var bw2 = Math.abs(Math.sin(time * 11 + bo.ph)) * 4.4 + 1.3;
+              var bx3 = s.x + bo.dx + Math.sin(time * 0.9 + bo.ph) * 22;
+              var by3 = GROUND - 28 + Math.sin(time * 1.7 + bo.ph * 1.3) * 11 + Math.sin(time * 3.1 + bo.ph) * 4;
+              var bw2 = Math.abs(Math.sin(time * 11 + bo.ph)) * 7.5 + 2.5;
               ctx.fillStyle = bo.c;
-              ctx.beginPath(); ctx.ellipse(bx3 - bw2 * 0.55, by3, bw2, 3.1, -0.5, 0, 7); ctx.fill();
-              ctx.beginPath(); ctx.ellipse(bx3 + bw2 * 0.55, by3, bw2, 3.1, 0.5, 0, 7); ctx.fill();
-              ctx.fillStyle = 'rgba(30,30,40,.8)'; ctx.fillRect(bx3 - 0.8, by3 - 2.6, 1.6, 5.2);
+              ctx.strokeStyle = 'rgba(20,20,35,.75)'; ctx.lineWidth = 1.6;
+              ctx.beginPath(); ctx.ellipse(bx3 - bw2 * 0.58, by3, bw2, 5.6, -0.5, 0, 7); ctx.fill(); ctx.stroke();
+              ctx.beginPath(); ctx.ellipse(bx3 + bw2 * 0.58, by3, bw2, 5.6, 0.5, 0, 7); ctx.fill(); ctx.stroke();
+              ctx.fillStyle = 'rgba(255,255,255,.55)';
+              ctx.beginPath(); ctx.ellipse(bx3 - bw2 * 0.58, by3 - 1.6, bw2 * 0.45, 2.2, -0.5, 0, 7); ctx.fill();
+              ctx.beginPath(); ctx.ellipse(bx3 + bw2 * 0.58, by3 - 1.6, bw2 * 0.45, 2.2, 0.5, 0, 7); ctx.fill();
+              ctx.fillStyle = '#141422'; ctx.fillRect(bx3 - 1.3, by3 - 4.2, 2.6, 8.4);
+              ctx.beginPath(); ctx.arc(bx3, by3 - 4.6, 2, 0, 7); ctx.fill();
             }
             for(var bu = 0; bu < s.bushes.length; bu++) drawBush(s.x + s.bushes[bu].dx, s.bushes[bu].s);
             for(var t = 0; t < s.trees.length; t++) drawTree(s.x + s.trees[t].dx, s.trees[t].s);
@@ -2440,14 +3183,16 @@
             // street lamp standing on the kerb at the far edge of the road
             if(s.lamp){
               var lx3 = s.x + s.w - 18;
-              ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(lx3, GROUND + 3, 9, 2.6, 0, 0, 7); ctx.fill();
-              ctx.strokeStyle = '#3d4a56'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
-              ctx.beginPath(); ctx.moveTo(lx3, GROUND + 2); ctx.lineTo(lx3, GROUND - 56); ctx.quadraticCurveTo(lx3 - 1, GROUND - 66, lx3 - 12, GROUND - 66); ctx.stroke();
-              var lglow = ctx.createRadialGradient(lx3 - 14, GROUND - 62, 1, lx3 - 14, GROUND - 62, 15);
-              lglow.addColorStop(0, 'rgba(255,224,130,.75)'); lglow.addColorStop(1, 'rgba(255,224,130,0)');
-              ctx.fillStyle = lglow; ctx.beginPath(); ctx.arc(lx3 - 14, GROUND - 62, 15, 0, 7); ctx.fill();
-              ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(lx3 - 14, GROUND - 63, 3.6, 0, 7); ctx.fill();
-              ctx.fillStyle = '#3d4a56'; ctx.fillRect(lx3 - 17.5, GROUND - 68, 7, 3.4);
+              ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(lx3, GROUND + 3, 11, 3.2, 0, 0, 7); ctx.fill();
+              ctx.strokeStyle = '#1f2a35'; ctx.lineWidth = 4.6; ctx.lineCap = 'round';
+              ctx.beginPath(); ctx.moveTo(lx3, GROUND + 2); ctx.lineTo(lx3, GROUND - 58); ctx.quadraticCurveTo(lx3 - 1, GROUND - 70, lx3 - 13, GROUND - 70); ctx.stroke();
+              var lglow = ctx.createRadialGradient(lx3 - 15, GROUND - 65, 1, lx3 - 15, GROUND - 65, 30);
+              lglow.addColorStop(0, 'rgba(255,230,120,1)'); lglow.addColorStop(0.35, 'rgba(255,214,80,.65)'); lglow.addColorStop(1, 'rgba(255,214,80,0)');
+              ctx.fillStyle = lglow; ctx.beginPath(); ctx.arc(lx3 - 15, GROUND - 65, 30, 0, 7); ctx.fill();
+              ctx.fillStyle = 'rgba(255,240,170,.45)'; ctx.beginPath(); ctx.ellipse(lx3 - 15, GROUND - 30, 16, 34, 0, 0, 7); ctx.fill();
+              ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(lx3 - 15, GROUND - 66, 5.8, 0, 7); ctx.fill();
+              ctx.strokeStyle = '#fffbe0'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(lx3 - 15, GROUND - 66, 5.8, 0, 7); ctx.stroke();
+              ctx.fillStyle = '#1f2a35'; ctx.fillRect(lx3 - 19, GROUND - 73, 9, 4.5);
             }
             for(var c2 = 0; c2 < s.cars.length; c2++) drawCar(s.x + s.cars[c2].dx, GROUND - s.cars[c2].h, s.cars[c2]);
           } else if(s.type === 'river'){
@@ -2472,16 +3217,19 @@
               ctx.beginPath(); ctx.moveTo(rx, rbase); ctx.lineTo(rx - 3 * ro.s, rbase - 16 * ro.s); ctx.moveTo(rx + 3, rbase); ctx.lineTo(rx + 5 * ro.s, rbase - 13 * ro.s); ctx.stroke();
               ctx.fillStyle = '#8a5a2b'; ctx.fillRect(rx - 4 * ro.s, rbase - 20 * ro.s, 3, 7 * ro.s);
             }
-            // lily pads resting on the surface, some in flower
+            // lily pads resting on the surface, some in flower — deep green, big and bold
             for(var lp = 0; lp < s.lilies.length; lp++){
               var lo2 = s.lilies[lp], lx2 = s.x + lo2.dx + Math.sin(time * 0.8 + lo2.dx) * 3, ly2 = WATER_TOP + lo2.dy;
-              ctx.fillStyle = 'rgba(15,80,40,.25)'; ctx.beginPath(); ctx.ellipse(lx2, ly2 + 2.5, 11 * lo2.s, 3.6 * lo2.s, 0, 0, 7); ctx.fill();
-              ctx.fillStyle = '#3da35d'; ctx.beginPath(); ctx.ellipse(lx2, ly2, 11 * lo2.s, 4.6 * lo2.s, 0, 0.3, 7); ctx.fill();
-              ctx.fillStyle = '#57bd74'; ctx.beginPath(); ctx.ellipse(lx2 - 2 * lo2.s, ly2 - 1, 6.5 * lo2.s, 2.6 * lo2.s, 0, 0, 7); ctx.fill();
+              ctx.fillStyle = 'rgba(5,50,25,.55)'; ctx.beginPath(); ctx.ellipse(lx2, ly2 + 3.5, 16 * lo2.s, 5.2 * lo2.s, 0, 0, 7); ctx.fill();
+              ctx.fillStyle = '#147a38'; ctx.beginPath(); ctx.ellipse(lx2, ly2, 15.5 * lo2.s, 6.6 * lo2.s, 0, 0.3, 7); ctx.fill();
+              ctx.strokeStyle = '#0a4d22'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.ellipse(lx2, ly2, 15.5 * lo2.s, 6.6 * lo2.s, 0, 0.3, 7); ctx.stroke();
+              ctx.fillStyle = '#2ecc5e'; ctx.beginPath(); ctx.ellipse(lx2 - 3 * lo2.s, ly2 - 1.4, 9 * lo2.s, 3.6 * lo2.s, 0, 0, 7); ctx.fill();
+              ctx.strokeStyle = 'rgba(10,77,34,.6)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(lx2, ly2); ctx.lineTo(lx2 + 10 * lo2.s, ly2 - 2); ctx.moveTo(lx2, ly2); ctx.lineTo(lx2 - 9 * lo2.s, ly2 + 1); ctx.stroke();
               if(lo2.fl){
-                ctx.fillStyle = '#ff9ec2';
-                for(var lpt = 0; lpt < 5; lpt++){ var lpa = lpt / 5 * Math.PI * 2; ctx.beginPath(); ctx.arc(lx2 + Math.cos(lpa) * 2.6 * lo2.s, ly2 - 2.4 + Math.sin(lpa) * 1.4 * lo2.s, 1.9 * lo2.s, 0, 7); ctx.fill(); }
-                ctx.fillStyle = '#ffd94d'; ctx.beginPath(); ctx.arc(lx2, ly2 - 2.4, 1.5 * lo2.s, 0, 7); ctx.fill();
+                ctx.fillStyle = '#ff2d78';
+                for(var lpt = 0; lpt < 5; lpt++){ var lpa = lpt / 5 * Math.PI * 2; ctx.beginPath(); ctx.arc(lx2 + Math.cos(lpa) * 4 * lo2.s, ly2 - 3.6 + Math.sin(lpa) * 2 * lo2.s, 3 * lo2.s, 0, 7); ctx.fill(); }
+                ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(lx2, ly2 - 3.6, 2.4 * lo2.s, 0, 7); ctx.fill();
+                ctx.strokeStyle = 'rgba(120,0,40,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(lx2, ly2 - 3.6, 2.4 * lo2.s, 0, 7); ctx.stroke();
               }
             }
             for(var l2 = 0; l2 < s.logs.length; l2++) drawLog(s.x + s.logs[l2].dx, s.logs[l2].w);
@@ -2509,11 +3257,11 @@
           }
         }
 
-        // soft shadow that tracks the flyer on the ground below
+        // bold shadow that tracks the flyer on the ground below
         if(state !== 'ready' && bird){
-          var shScale = Math.max(0.25, 1 - (GROUND - bird.y) / 620);
-          ctx.fillStyle = 'rgba(15,45,20,' + (0.10 + shScale * 0.16).toFixed(3) + ')';
-          ctx.beginPath(); ctx.ellipse(bird.x, GROUND + 14, 20 * shScale + 6, 5 * shScale + 2, 0, 0, 7); ctx.fill();
+          var shScale = Math.max(0.3, 1 - (GROUND - bird.y) / 620);
+          ctx.fillStyle = 'rgba(10,35,15,' + (0.22 + shScale * 0.28).toFixed(3) + ')';
+          ctx.beginPath(); ctx.ellipse(bird.x, GROUND + 14, 24 * shScale + 7, 6.5 * shScale + 2.5, 0, 0, 7); ctx.fill();
         }
         if(state !== 'ready') drawCharacter();
         // gentle vignette to focus the centre
@@ -2528,19 +3276,21 @@
           ctx.fillStyle = p.color;
           if(p.kind === 'feather'){
             ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-            ctx.beginPath(); ctx.ellipse(0, 0, p.r * 1.55, p.r * 0.62, 0, 0, 7); ctx.fill();
-            ctx.strokeStyle = 'rgba(120,90,40,.45)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(-p.r * 1.55, 0); ctx.lineTo(p.r * 1.55, 0); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(0, 0, p.r * 2.15, p.r * 0.9, 0, 0, 7); ctx.fill();
+            ctx.strokeStyle = 'rgba(90,60,20,.75)'; ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.ellipse(0, 0, p.r * 2.15, p.r * 0.9, 0, 0, 7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-p.r * 2.15, 0); ctx.lineTo(p.r * 2.15, 0); ctx.stroke();
             ctx.restore();
           } else if(p.kind === 'star'){
             ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+            ctx.strokeStyle = 'rgba(160,100,0,.65)'; ctx.lineWidth = 1.2;
             ctx.beginPath();
             for(var sp2 = 0; sp2 < 8; sp2++){
-              var sa = sp2 * Math.PI / 4, sr2 = sp2 % 2 ? p.r * 0.45 : p.r * 1.4;
+              var sa = sp2 * Math.PI / 4, sr2 = sp2 % 2 ? p.r * 0.5 : p.r * 1.95;
               if(sp2 === 0) ctx.moveTo(Math.cos(sa) * sr2, Math.sin(sa) * sr2);
               else ctx.lineTo(Math.cos(sa) * sr2, Math.sin(sa) * sr2);
             }
-            ctx.closePath(); ctx.fill(); ctx.restore();
+            ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
           } else {
             ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
           }
@@ -2568,6 +3318,28 @@
       /* ---------------- Input ---------------- */
       document.getElementById('startBtn').addEventListener('click', startGame);
       document.getElementById('againBtn').addEventListener('click', startGame);
+      document.getElementById('nextLevelBtn').addEventListener('click', function(){
+        if(currentLevel < 9){ currentLevel++; saveCampaign(); }
+        startGame();
+      });
+      document.getElementById('replayBtn').addEventListener('click', startGame);
+      document.getElementById('goNextBtn').addEventListener('click', function(){
+        if(currentLevel < 9){ currentLevel++; saveCampaign(); }
+        startGame();
+      });
+      document.getElementById('useCharBtn').addEventListener('click', function(){
+        var id = this.getAttribute('data-reward');
+        if(id && charOn(id)){
+          character = id;
+          lsSet('fc_character', id);
+          applyUnlockUI();
+          var d2 = charDef(id);
+          document.getElementById('winCharMsg').textContent = 'Done — you are now the ' + (d2 ? d2.name : id) + '! Tap Next level or Replay to fly.';
+        }
+      });
+      document.getElementById('keepCharBtn').addEventListener('click', function(){
+        document.getElementById('winCharMsg').textContent = 'No problem — keeping your current character. The new one is waiting in the character picker whenever you want it.';
+      });
       var playBtns = document.querySelectorAll('[data-play]');
       for(var pb = 0; pb < playBtns.length; pb++) playBtns[pb].addEventListener('click', startGame);
       document.getElementById('pauseBtn').addEventListener('click', function(){ audio(); togglePause(); });
@@ -2609,11 +3381,14 @@
       });
 
       buildSkinPickers();
+      buildBgPickers();
+      buildLevelPanels();
       setupPromoForms();
       initSocial();
       applyUnlockUI();
       if(justUnlocked) toast('🎉 Thanks! Full version unlocked — pick your bird color below', 3200);
       else if(justBoughtPack) toast('🎉 Thanks! Pack ' + justBoughtPack + ' unlocked — pick your new characters below', 3200);
+      else if(justBoughtBg) toast('🎉 Thanks! ' + BGS[justBoughtBg].name + ' background unlocked — pick it in the background picker below', 3200);
       reset();
       requestAnimationFrame(loop);
     })();
