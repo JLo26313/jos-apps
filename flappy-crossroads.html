@@ -324,7 +324,7 @@
 
       <div class="level-bar" id="levelBar" aria-label="Current level">
         <span class="lv-name" id="lvName">Level 1 · Classic Day</span>
-        <span class="lv-prog" id="lvProg">Target: 10 pts</span>
+        <span class="lv-prog" id="lvProg">Target: 280 pts</span>
         <span class="lv-prog" id="lvTime">Time: 0:00</span>
       </div>
 
@@ -831,21 +831,26 @@
         { id: 'ghost',   name: 'Ghost',       pack: 4, dot: '#eef2f7' }
       ];
       /* Campaign levels: each background is a level (level n plays on
-         background n-1). Reach `target` points to clear the level. Stars
-         are decided purely by how long reaching the target took: at or
-         under `three` seconds = 3 stars, at or under `two` = 2 stars,
-         any clear = 1 star. Clearing levels 1-8 each unlocks one
-         character (the pack characters, in order). */
+         background n-1). Reach `target` points to clear the level.
+         Targets start at 280 for Level 1, then climb by +200, +300,
+         +200, +300 … alternating: 480, 780, 980, 1280, 1480, 1780,
+         1980, 2280. Stars are decided purely by how long reaching the
+         target took: at or under `three` seconds = 3 stars, at or
+         under `two` = 2 stars, any clear = 1 star. The star times
+         scale with each target at the same pace as Level 1
+         (★★★ in target × 200/280 s, ★★ in target × 300/280 s).
+         Clearing levels 1-8 each unlocks one character (the pack
+         characters, in order). */
       var LEVELS = [
-        { name: 'Classic Day',   target: 10, three: 20,  two: 32 },
-        { name: 'Sunset',        target: 15, three: 28,  two: 44 },
-        { name: 'Midnight City', target: 20, three: 36,  two: 56 },
-        { name: 'Snowy Peaks',   target: 25, three: 44,  two: 68 },
-        { name: 'Desert Dunes',  target: 30, three: 52,  two: 80 },
-        { name: 'Forest',        target: 35, three: 60,  two: 92 },
-        { name: 'Ocean',         target: 40, three: 68,  two: 104 },
-        { name: 'Autumn',        target: 50, three: 84,  two: 128 },
-        { name: 'Space',         target: 60, three: 100, two: 152 }
+        { name: 'Classic Day',   target: 280,  three: 200,  two: 300 },
+        { name: 'Sunset',        target: 480,  three: 343,  two: 514 },
+        { name: 'Midnight City', target: 780,  three: 557,  two: 836 },
+        { name: 'Snowy Peaks',   target: 980,  three: 700,  two: 1050 },
+        { name: 'Desert Dunes',  target: 1280, three: 914,  two: 1371 },
+        { name: 'Forest',        target: 1480, three: 1057, two: 1586 },
+        { name: 'Ocean',         target: 1780, three: 1271, two: 1907 },
+        { name: 'Autumn',        target: 1980, three: 1414, two: 2121 },
+        { name: 'Space',         target: 2280, three: 1629, two: 2443 }
       ];
       var PROMO_SECONDS = 3600; // 1 hour of play time
       var PROMO_SECONDS_30 = 1800; // 30 minutes of play time
