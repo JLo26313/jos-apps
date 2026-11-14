@@ -780,7 +780,7 @@
                          fc_frog_claimed / fc_frog_left (FROG26, 30 min of play left)
                          fc_bee_claimed / fc_bee_left   (BEE26, 30 min of play left)
                          fc_ghost_claimed / fc_ghost_left (GHOST26, 30 min of play left)
-           promo master: fc_every_unlocked (EVERY26, permanent, separate from paid;
+           promo master: fc_every_unlocked (EVERY2026, permanent, separate from paid;
                          covers colors, all 4 packs AND all 8 backgrounds)
            paid bgs    : fc_bg1 .. fc_bg8 (Stripe ?bgN=success, permanent)
            bg trials   : fc_bgN_claimed / fc_bgN_left (SUNSET26, MIDNIGHT26,
@@ -858,7 +858,7 @@
       var packPaid = [false, false, false, false, false];
       var justBoughtPack = 0;
       var character = 'bird'; // 'bird' or a CHARACTERS id
-      var everyUnlocked = false; // EVERY26 master promo — permanent, separate from paid
+      var everyUnlocked = false; // EVERY2026 master promo — permanent, separate from paid
       // Promo trials. active = usable and counting down during play.
       // pending = the time ran out mid-run: access lasts until the run ends,
       // then finalizePromoExpiry() locks it for the next run.
@@ -1029,7 +1029,7 @@
       }
       function refreshPromoTime(){
         var parts = [];
-        if(everyUnlocked) parts.push('EVERY26: everything unlocked');
+        if(everyUnlocked) parts.push('EVERY2026: everything unlocked');
         if(flyPromo.active && !flyPromo.pending) parts.push('FLYAWAY26 free time left: ' + fmtLeft(flyPromo.left) + ' of play');
         if(getPromo.active && !getPromo.pending) parts.push('GETMORE free time left: ' + fmtLeft(getPromo.left) + ' of play');
         if(frogPromo.active && !frogPromo.pending) parts.push('FROG26 free time left: ' + fmtLeft(frogPromo.left) + ' of play');
@@ -1353,7 +1353,7 @@
                 msg.textContent = text;
                 msg.className = 'promo-msg ' + (ok ? 'ok' : 'err');
               }
-              if(code === 'EVERY26'){
+              if(code === 'EVERY2026'){
                 if(everyUnlocked){
                   show('Everything is already unlocked ✓', true);
                 } else {
