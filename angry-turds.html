@@ -211,6 +211,7 @@
       }
       .lvlgrid button small{ display:block; font-size:.58rem; color:var(--muted); font-weight:700; }
       .lvlgrid button.locked{ opacity:.4; cursor:default; }
+      .lvlgrid .gridhead{ flex:0 0 100%; text-align:center; font-weight:800; font-size:.92rem; color:var(--ink); margin-top:8px; letter-spacing:.2px; }
       .lvlgrid button.done{ border-color:var(--accent2); }
       .promo{ margin-top:12px; border-top:1.5px dashed var(--line); padding-top:10px; }
       .promo label{ display:block; font-size:.72rem; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
@@ -321,18 +322,21 @@
           <div class="card">
             <div class="big">💩</div>
             <h2>Angry Turds</h2>
-            <p>The people have mocked the turds for the last time. Load the slingshot, let it fly, and splat every last one of them.</p>
+            <p>The people have mocked the turds for the last time. Load the slingshot, let it fly, and splat every last one of them — 100 levels across two worlds, with a fresh backdrop every 10 levels.</p>
             <div class="challenge-banner" data-challenge-banner hidden></div>
             <div class="howto">
               <div>🎯 <b>Drag back</b> on the turd and let go to fling it. Pull as hard as you like — a full pull always launches at max power.</div>
               <div>💨 <b>Tap mid-flight</b> for a one-time fart boost.</div>
               <div>🧱 Crash through wood, glass and stone forts — drop stuff on people or hit them dead-on.</div>
               <div>🚶 Some people <b>pace back and forth</b> — time your shot and splat them on the move!</div>
+              <div>💩 <b>Level 38 unlock:</b> the Diarrhea Dropper — launch it, then <b>tap again mid-flight</b> to drop a splat straight down on your target while it flies on!</div>
+              <div>🚀 <b>World 2</b> blasts off into space: 50 more levels, a new planet every 10 levels.</div>
               <div>🏆 Splat everyone before you run out of turds.</div>
             </div>
             <div class="btnrow">
               <button class="btn" id="playBtn">▶ Start flinging</button>
               <a class="btn alt buy buy-full-link" href="https://buy.stripe.com/3cI9AS2FS5xH2NC7G0cAo0A" target="_blank" rel="noopener">🛒 Full Game — $21.99</a>
+              <a class="btn buy buy-world2-link" href="https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C" target="_blank" rel="noopener">🚀 World 2 — $21.99</a>
             </div>
             <div class="promo">
               <label for="promoInput">Promo code</label>
@@ -347,9 +351,11 @@
               <div class="shopbtns">
                 <a class="btn buy buy-full-link" href="https://buy.stripe.com/3cI9AS2FS5xH2NC7G0cAo0A" target="_blank" rel="noopener">🛒 Buy Full Game — $21.99</a>
                 <a class="btn alt buy buy-next-link" href="https://buy.stripe.com/eVq00ieoA1hr0Fu5xScAo0B" target="_blank" rel="noopener">⏭ Buy Next Level — $0.99</a>
+                <a class="btn buy buy-world2-link" href="https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C" target="_blank" rel="noopener">🚀 Buy World 2 — $21.99</a>
               </div>
-              <div class="unlocked-line full-unlocked-line" hidden>Full game unlocked — all 50 levels &amp; every turd type ✓</div>
-              <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · levels can always be earned by playing, too</div>
+              <div class="unlocked-line full-unlocked-line" hidden>Full game unlocked — World 1: all 50 levels &amp; every turd type ✓</div>
+              <div class="unlocked-line world2-unlocked-line" hidden>World 2 unlocked — 50 space levels across 5 planets ✓ 🚀</div>
+              <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · World 1 levels can always be earned by playing, too · World 2 is a separate $21.99 world</div>
               <div class="shopmsg" id="shopMsg" aria-live="polite"></div>
             </div>
             <div class="promo">
@@ -418,7 +424,7 @@
         </div>
       </div>
 
-      <p class="tip" id="tip">Drag the turd back and let go · Tap while it flies for a fart boost 💨 · Tap 🔄 to rotate the screen · ⛶ for the big screen</p>
+      <p class="tip" id="tip">Drag the turd back and let go · Tap while it flies for a fart boost 💨 · The Level 38 turd drops a splat on a second tap · Tap 🔄 to rotate the screen · ⛶ for the big screen</p>
     </div>
 
 <script>
@@ -454,6 +460,9 @@ var state = {
   cloudT: 0,
   masterUnlocked: false, /* EVERY26: all levels + all turd types, saved on this device only */
   fullPurchased: false,  /* $21.99 Full Game purchase: same unlock as EVERY26, saved on this device only */
+  every26: false,        /* true only when the unlock came from the EVERY26 promo code */
+  world2Unlocked: false, /* $21.99 World 2 purchase: 50 space levels, saved on this device only */
+  drops: [],             /* diarrhea splats dropped mid-flight by the Level 38 turd */
   levelTurds: []         /* effective turd list for the current level (includes Mega after master unlock) */
 };
 
@@ -557,8 +566,10 @@ var EXTRA_NAMES = [
     var mats = base.slice();
     /* later levels swap more wood/glass for stone */
     if(gi > 14 && mats[0] === 'wood') mats[0] = 'stone';
+    if(gi > 22 && mats.length > 2 && mats[2] === 'glass') mats[2] = 'wood';
     if(gi > 28 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'wood';
     if(gi > 36 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
+    if(gi > 40 && mats.length > 1 && mats[1] === 'wood') mats[1] = 'stone';
     return mats;
   }
   function stack(blocks, x, n, mats){
@@ -660,7 +671,137 @@ var EXTRA_NAMES = [
       blocks.push([bx2, bt2 + 38, 76, 76, 'glass']);
       people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt2 + 76]); people.push([bx2 + 190]);
     }
+    /* difficulty ramp: the deeper into World 1, the more people crowd the field */
+    var extraP = Math.floor(gi / 11); /* 0 early on, up to +4 by the last levels */
+    var spotsP = [712, 1214, 664, 1248];
+    for(var epi = 0; epi < extraP; epi++) people.push([spotsP[epi % spotsP.length]]);
     LEVELS.push(L(turds, blocks, people, EXTRA_NAMES[gi]));
+  }
+})();
+
+/* ---- World 2: Levels 51-100, out in space. Fifty more forts on five
+   planets (a new planet every 10 levels), built taller and stonier than
+   World 1 and crowded with more people the deeper in you go. ---- */
+var W2_NAMES = [
+  'Mars Landing','Red Rock Riot','Phobos Panic','Dusty Craters','Olympus Mash','Rust Storm','Dune Sea','Canyon Chaos','Valles Splat','Mars Showdown',
+  'Europa Ice','Frozen Fort','Ice Moon Mayhem','Cryo Castle','Glacier Gusher','Subzero Splat','Frostbite Fort','Icicle Alley','Tundra Trouble','Europa Showdown',
+  'Nebula Drift','Violet Void','Star Nursery','Cosmic Dust-Up','Purple Haze','Gravity Well','Dark Matter','Void Walker','Starlight Smash','Nebula Showdown',
+  'Lava Landing','Magma Mayhem','Ember Fort','Basalt Bunker','Firestorm','Molten Mess','Volcano Vista','Ash Fall','Inferno Alley','Lava Showdown',
+  'Crystal Landing','Prism Peaks','Gemstone Gorge','Aurora Drift','Starforge','Diamond Dust','The Rift','Event Horizon','Last Light','Final Frontier Flush'
+];
+(function(){
+  function stack(blocks, x, n, mats){
+    for(var k = 0; k < n; k++) blocks.push([x, 38 + 76 * k, 76, 76, mats[k % mats.length]]);
+    return 76 * n;
+  }
+  function beam(blocks, x, topY, w, mat){
+    blocks.push([x, topY + 11, w, 22, mat || 'wood']);
+    return topY + 22;
+  }
+  function matsFor(wi, base){
+    /* space forts are built tough, and tougher the deeper in you go */
+    var mats = base.slice();
+    if(wi > 8 && mats[0] === 'wood') mats[0] = 'stone';
+    if(wi > 18 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'stone';
+    if(wi > 28 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
+    if(wi > 38) mats = mats.map(function(m){ return m === 'glass' ? 'wood' : m; });
+    return mats;
+  }
+  function makeTurds2(wi){
+    var n = 5 + (wi % 2), t = [];
+    for(var i = 0; i < n; i++) t.push('normal');
+    t[1] = 'chonk';
+    if(n > 4) t[3] = 'chonk';
+    if(wi > 24) t[n - 1] = 'chonk';
+    return t;
+  }
+  for(var wi = 0; wi < W2_NAMES.length; wi++){
+    var blocks = [], people = [];
+    var t = wi % 7;
+    var boost = wi >= 25 ? 1 : 0;
+    var turds = makeTurds2(wi);
+    if(t === 0){
+      /* Single tower, taller than anything in World 1 */
+      var x0 = 900 + ((wi % 3) - 1) * 50;
+      var h0 = 3 + (wi % 2) + boost;
+      var top0 = stack(blocks, x0, h0, matsFor(wi, ['stone','wood','glass','stone','wood']));
+      var roof0 = beam(blocks, x0, top0, 200, wi > 20 ? 'stone' : 'wood');
+      people.push([x0, roof0]);
+      people.push([x0 + 165]);
+      people.push([x0 - 155]);
+    } else if(t === 1){
+      /* Two towers + bridge */
+      var ax = 840, bx = 1050;
+      var ha = 3, hb = 3 + (wi % 2);
+      var ta = stack(blocks, ax, ha, matsFor(wi, ['stone','wood','wood','glass']));
+      var tb = stack(blocks, bx, hb, matsFor(wi, ['stone','stone','wood','wood']));
+      var bridgeTop = Math.max(ta, tb);
+      if(ta < bridgeTop) blocks.push([ax, ta + 38, 76, 76, 'stone']);
+      if(tb < bridgeTop) blocks.push([bx, tb + 38, 76, 76, 'stone']);
+      var bt = beam(blocks, 945, bridgeTop, 300, 'wood');
+      blocks.push([945, bt + 30, 76, 60, 'stone']);
+      people.push([ax, bt]); people.push([bx, bt]); people.push([945, bt + 60]); people.push([945]);
+    } else if(t === 2){
+      /* Pyramid with a stone keep on top */
+      var cx = 930;
+      stack(blocks, cx - 80, 1, matsFor(wi, ['stone']));
+      stack(blocks, cx, 1, matsFor(wi, ['stone']));
+      stack(blocks, cx + 80, 1, matsFor(wi, ['stone']));
+      blocks.push([cx - 40, 114, 76, 76, 'wood']);
+      blocks.push([cx + 40, 114, 76, 76, 'glass']);
+      var pTop = beam(blocks, cx, 152, 190, 'wood');
+      blocks.push([cx, pTop + 38, 76, 76, 'stone']);
+      var pTop2 = beam(blocks, cx, pTop + 76, 150, 'wood');
+      people.push([cx - 80, 76]); people.push([cx + 80, 76]); people.push([cx, pTop2]); people.push([cx + 185]);
+    } else if(t === 3){
+      /* Castle: two tall towers, stone roof, keep on top */
+      var lx = 815, rx = 1085;
+      var lt = stack(blocks, lx, 3 + boost, matsFor(wi, ['stone','stone','wood','glass']));
+      var rt = stack(blocks, rx, 3 + boost, matsFor(wi, ['stone','wood','stone','wood']));
+      var ct = beam(blocks, 950, lt, 360, 'stone');
+      blocks.push([950, ct + 38, 76, 76, 'stone']);
+      var ct2 = beam(blocks, 950, ct + 76, 170, 'wood');
+      people.push([lx, ct]); people.push([rx, ct]); people.push([950, ct2]); people.push([950]);
+    } else if(t === 4){
+      /* Triple towers */
+      var xs = [790, 935, 1080];
+      var hs = [3, 4, 3];
+      for(var xi = 0; xi < 3; xi++){
+        var xt = stack(blocks, xs[xi], hs[xi], matsFor(wi, ['wood','stone','glass','wood']));
+        var xr = beam(blocks, xs[xi], xt, 150, 'wood');
+        people.push([xs[xi], xr]);
+      }
+      people.push([862]); people.push([1010]);
+    } else if(t === 5){
+      /* Staircase up */
+      var sx = 790;
+      for(var si = 0; si < 4; si++){
+        var st = stack(blocks, sx + si * 92, si + 1 + (si === 3 ? boost : 0), matsFor(wi, ['stone','wood','glass','stone']));
+        if(si === 3){
+          var sr = beam(blocks, sx + si * 92, st, 170, 'wood');
+          people.push([sx + si * 92, sr]);
+        } else {
+          people.push([sx + si * 92, st]);
+        }
+      }
+      people.push([712]);
+    } else {
+      /* Bunker: stone base, stone roof, people inside and on top */
+      var bx2 = 930;
+      stack(blocks, bx2 - 84, 1, matsFor(wi, ['stone']));
+      stack(blocks, bx2 + 84, 1, matsFor(wi, ['stone']));
+      blocks.push([bx2 - 84, 114, 76, 76, 'stone']);
+      blocks.push([bx2 + 84, 114, 76, 76, 'stone']);
+      var bt2 = beam(blocks, bx2, 152, 300, 'stone');
+      blocks.push([bx2, bt2 + 38, 76, 76, 'stone']);
+      var bt3 = beam(blocks, bx2, bt2 + 76, 170, 'wood');
+      people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt3]); people.push([bx2 + 190]);
+    }
+    /* space crowds: more people the deeper into World 2 you go */
+    var extra = 2 + Math.floor(wi / 10);
+    var spots = [706, 1214, 664, 1248, 736];
+    for(var ei = 0; ei < extra; ei++) people.push([spots[ei % spots.length]]);
+    LEVELS.push(L(turds, blocks, people, W2_NAMES[wi]));
   }
 })();
 
@@ -670,9 +811,10 @@ var MAT = {
   stone: { hp: 120, score: 300, fill: '#9a97a3', edge: '#6e6a78' }
 };
 var TURD = {
-  normal: { r: 21, mass: 1.0, dmg: 1.0, emoji: '💩' },
-  chonk:  { r: 30, mass: 2.2, dmg: 1.9, emoji: '💩' },
-  mega:   { r: 35, mass: 3.1, dmg: 2.6, emoji: '💩' }
+  normal:   { r: 21, mass: 1.0,  dmg: 1.0, emoji: '💩' },
+  chonk:    { r: 30, mass: 2.2,  dmg: 1.9, emoji: '💩' },
+  squirter: { r: 23, mass: 1.15, dmg: 1.1, emoji: '💩' },
+  mega:     { r: 35, mass: 3.1,  dmg: 2.6, emoji: '💩' }
 };
 
 /* ============================== level build ============================== */
@@ -685,10 +827,17 @@ function buildLevel(idx){
       vx: 0, vy: 0, angle: 0, va: 0, dead: false, settled: true, hitFlash: 0
     };
   });
-  /* Effective turds: the master unlock adds a Mega turd to every level so all turd types are in play */
+  /* Effective turds: from Level 38 on (about 3/4 through World 1) the
+     Diarrhea Dropper joins the rotation; the master unlock adds a Mega turd
+     to every level so all turd types are in play */
   state.levelTurds = def.turds.slice();
+  if(idx >= 37 && state.levelTurds.length >= 2){
+    state.levelTurds[1] = 'squirter';
+  }
   if(state.masterUnlocked && state.levelTurds.indexOf('mega') < 0 && state.levelTurds.length >= 2){
-    state.levelTurds[state.levelTurds.length - 1] = 'mega';
+    var mi = state.levelTurds.length - 1;
+    if(state.levelTurds[mi] === 'squirter') mi = state.levelTurds.length - 2;
+    state.levelTurds[mi] = 'mega';
   }
   state.people = def.people.map(function(p, i){
     var feetY = (p.length > 1) ? GROUND - p[1] : GROUND;
@@ -708,10 +857,10 @@ function buildLevel(idx){
       var onGround = (p.homeY === GROUND);
       var want = onGround ? (i % 2 === 0 || idx >= 9) : (i % 2 === 0);
       if(!want) return;
-      if(onGround && groundPacers >= 2 && idx < 12) return;
+      if(onGround && groundPacers >= 2 + Math.floor(idx / 16)) return;
       p.mover = true;
-      p.range = onGround ? (62 + (idx % 3) * 12) : 30;
-      p.speed = 0.9 + (idx % 5) * 0.12 + i * 0.07;
+      p.range = onGround ? (62 + (idx % 3) * 12 + Math.min(26, idx * 0.45)) : 30;
+      p.speed = 0.9 + (idx % 5) * 0.12 + i * 0.07 + Math.min(0.55, idx * 0.009);
       p.phase = i * 1.9 + idx * 0.7;
       if(onGround) groundPacers++;
     });
@@ -727,6 +876,7 @@ function buildLevel(idx){
   state.turdIndex = 0;
   state.projectile = null;
   state.particles = [];
+  state.drops = [];
   state.texts = [];
   state.drag = null;
   state.mode = 'aim';
@@ -742,7 +892,7 @@ function loadTurd(){
   var type = list[state.turdIndex];
   state.projectile = {
     type: type, r: TURD[type].r, x: SLING_X, y: SLING_Y,
-    vx: 0, vy: 0, flying: false, boosted: false, rest: false, restT: 0, trail: []
+    vx: 0, vy: 0, flying: false, boosted: false, dropped: false, rest: false, restT: 0, trail: []
   };
   sfx.load();
 }
@@ -770,6 +920,7 @@ function updateHUD(){
     if(i < state.turdIndex) s.className = 'used';
     else if(i === state.turdIndex) s.className = 'next';
     if(t === 'chonk') s.style.fontSize = '1.45em';
+    if(t === 'squirter'){ s.style.fontSize = '1.32em'; s.title = 'Diarrhea Dropper — tap again mid-flight to drop a splat'; }
     if(t === 'mega'){ s.style.fontSize = '1.7em'; s.title = 'Mega turd'; }
     q.appendChild(s);
   });
@@ -927,6 +1078,43 @@ function step(dt){
     if(pr.x + pr.r > W){ pr.x = W - pr.r; pr.vx = -Math.abs(pr.vx) * 0.4; }
     if(pr.y > H + 200){ pr.rest = true; }
   }
+
+  /* ---- diarrhea drops: fall straight down and splat whatever is under them ---- */
+  if(state.drops.length){
+    state.drops = state.drops.filter(function(d){
+      d.vy += GRAV * dt;
+      d.y += d.vy * dt;
+      for(var di2 = 0; di2 < state.people.length; di2++){
+        var dp = state.people[di2];
+        if(dp.dead) continue;
+        var dcx = Math.max(dp.x - dp.w / 2, Math.min(d.x, dp.x + dp.w / 2));
+        var dcy = Math.max(dp.y - dp.h, Math.min(d.y, dp.y));
+        var ddx = d.x - dcx, ddy = d.y - dcy;
+        if(ddx * ddx + ddy * ddy < d.r * d.r){
+          splatPerson(dp, 'direct');
+          burst(d.x, d.y, 14, SPLAT_COLORS.concat(['#8a7a2a']), 300, 0.7, 700, 7);
+          return false;
+        }
+      }
+      for(var db2 = 0; db2 < state.blocks.length; db2++){
+        var bb = state.blocks[db2];
+        if(bb.dead) continue;
+        if(circleBox(d.x, d.y, d.r, bb).hit){
+          damageBlock(bb, 60, d.x, d.y);
+          sfx.splat();
+          burst(d.x, d.y, 12, SPLAT_COLORS.concat(['#8a7a2a']), 260, 0.6, 650, 6);
+          return false;
+        }
+      }
+      if(d.y + d.r >= GROUND){
+        sfx.splat();
+        burst(d.x, GROUND - 4, 12, SPLAT_COLORS.concat(['#8a7a2a']), 240, 0.6, 600, 6);
+        puff(d.x, GROUND - 10, 3);
+        return false;
+      }
+      return d.y < H + 60;
+    });
+  }
   if(pr && pr.rest) pr.restT += dt;
   state.people.forEach(function(p){ if(!p.dead && pr && pr.flying) p.panic = 1; else if(p.panic > 0) p.panic = Math.max(0, p.panic - dt * 0.5); });
 
@@ -1064,7 +1252,7 @@ function step(dt){
   var alivePeople = state.people.filter(function(p){ return !p.dead; }).length;
 
   if(state.mode === 'flying'){
-    var done = (!pr || pr.rest) && !anyFlyingBlock;
+    var done = (!pr || pr.rest) && !anyFlyingBlock && state.drops.length === 0;
     if(done){
       state.settleTimer += dt;
       if(state.settleTimer > 0.55){
@@ -1138,6 +1326,7 @@ function winLevel(){
     state.level >= LEVELS.length - 1 ? 'That was the last fort — every person splatted. You are the Flusher Supreme. 💩👑' :
     'Every person got what was coming to them. On to the next fort.';
   document.getElementById('nextBtn').textContent = state.level >= LEVELS.length - 1 ? '↻ Play again' : 'Next level ▶';
+  if(state.level === 49 && !world2Open()) document.getElementById('nextBtn').textContent = '🚀 World 2 awaits';
   showOverlay('endOverlay');
   buildLevelGrid();
   document.getElementById('buyNextWrap').hidden = true;
@@ -1166,10 +1355,89 @@ function loseLevel(){
 }
 
 /* ============================== drawing ============================== */
+/* ---- backdrops: a new one every 10 levels. World 1 crosses the meadow,
+   a sunset, the desert, the snow and a night field; World 2 hops planets —
+   Mars, an ice moon, a violet nebula world, a lava planet, and a crystal
+   world in deep space. draw() paints entirely from the current theme. ---- */
+var THEMES = [
+  { /* 1-10 · Classic Meadow */
+    skyTop:'#4f9fd8', skyMid:'#8ec9e8', skyLow:'#c4e7f2', skyBot:'#e6f4e2',
+    celestial:'sun', sunX:1150, sunY:84, sunR:40, sunGlow:'rgba(255,224,102,0.55)', sunRay:'rgba(255,217,77,0.30)', sunC0:'#fff3b0', sunC1:'#ffd94d', sunC2:'#f5b921',
+    stars:false, space:false, night:false, rainbow:true, snowcaps:true, decor:'earth', flowers:true,
+    mountain:'rgba(148,178,208,0.85)', hill1:'#93cf7c', hill2:'#7cc468',
+    grass1:'#84cc66', grass2:'#579a41', dirt1:'#6b4423', dirt2:'#59371f', dirt3:'#40260f',
+    tuft1:'#4e8a3c', tuft2:'#69a854', crystal:'#ffffff' },
+  { /* 11-20 · Sunset */
+    skyTop:'#4a4e8f', skyMid:'#c65d7b', skyLow:'#f2a65a', skyBot:'#f7d08a',
+    celestial:'sun', sunX:1085, sunY:315, sunR:56, sunGlow:'rgba(255,150,80,0.55)', sunRay:'rgba(255,170,90,0.28)', sunC0:'#ffe9b0', sunC1:'#ffb35c', sunC2:'#f27d3a',
+    stars:false, space:false, night:false, rainbow:true, snowcaps:false, decor:'earth', flowers:true,
+    mountain:'rgba(110,90,140,0.85)', hill1:'#7a5a8c', hill2:'#66487a',
+    grass1:'#8fae4e', grass2:'#6d8a3a', dirt1:'#5d3a1e', dirt2:'#4c2f18', dirt3:'#38220f',
+    tuft1:'#5d7a30', tuft2:'#7a9a42', crystal:'#ffffff' },
+  { /* 21-30 · Desert */
+    skyTop:'#4aa8dd', skyMid:'#93d2f0', skyLow:'#f2dfae', skyBot:'#f9ecc8',
+    celestial:'sun', sunX:1150, sunY:80, sunR:46, sunGlow:'rgba(255,240,190,0.6)', sunRay:'rgba(255,230,160,0.30)', sunC0:'#fffbe8', sunC1:'#ffec9e', sunC2:'#f7cd54',
+    stars:false, space:false, night:false, rainbow:false, snowcaps:false, decor:'desert', flowers:false,
+    mountain:'rgba(216,182,134,0.9)', hill1:'#e8c88a', hill2:'#dcb26e',
+    grass1:'#e6c87e', grass2:'#d4af5f', dirt1:'#b98a4a', dirt2:'#a1713a', dirt3:'#7d5527',
+    tuft1:'#c2a054', tuft2:'#d4b96a', crystal:'#ffffff' },
+  { /* 31-40 · Snowfields */
+    skyTop:'#6fa8d8', skyMid:'#bcd9ef', skyLow:'#e8f2fa', skyBot:'#ffffff',
+    celestial:'sun', sunX:1150, sunY:84, sunR:36, sunGlow:'rgba(225,238,252,0.55)', sunRay:'rgba(230,242,255,0.30)', sunC0:'#ffffff', sunC1:'#eef6fd', sunC2:'#cfe4f4',
+    stars:false, space:false, night:false, rainbow:false, snowcaps:true, decor:'earth', flowers:false,
+    mountain:'rgba(158,186,208,0.9)', hill1:'#eef5fa', hill2:'#dcebf5',
+    grass1:'#ffffff', grass2:'#dfeef7', dirt1:'#7a6248', dirt2:'#66503a', dirt3:'#4c3a28',
+    tuft1:'#cfe0ea', tuft2:'#e4eef4', crystal:'#ffffff' },
+  { /* 41-50 · Night */
+    skyTop:'#0d1b3a', skyMid:'#1d3358', skyLow:'#33507c', skyBot:'#47688f',
+    celestial:'moon',
+    stars:true, space:false, night:true, rainbow:false, snowcaps:false, decor:'earth', flowers:false,
+    mountain:'rgba(38,58,92,0.9)', hill1:'#2c4a3a', hill2:'#22402f',
+    grass1:'#3f7a3c', grass2:'#2f612c', dirt1:'#4a2f18', dirt2:'#3a2412', dirt3:'#2a1a0c',
+    tuft1:'#2c5c2a', tuft2:'#3a7038', crystal:'#ffffff' },
+  { /* 51-60 · Mars */
+    skyTop:'#170c12', skyMid:'#3a1c22', skyLow:'#6e3524', skyBot:'#8a4a2e',
+    celestial:'planet', pX:1150, pY:92, pR:36, pC0:'#e8a37c', pC1:'#b06a44', pRing:false,
+    stars:true, space:true, night:false, rainbow:false, snowcaps:false, decor:'space', flowers:false,
+    mountain:'rgba(122,62,40,0.85)', hill1:'#a85a3c', hill2:'#93482c',
+    grass1:'#c96a48', grass2:'#a8502f', dirt1:'#8a4028', dirt2:'#71331f', dirt3:'#572716',
+    tuft1:'#a8502f', tuft2:'#c96a48', crystal:'#ffb37a' },
+  { /* 61-70 · Europa, the ice moon */
+    skyTop:'#060a18', skyMid:'#0e1a30', skyLow:'#274a66', skyBot:'#3f7396',
+    celestial:'planet', pX:1120, pY:110, pR:56, pC0:'#cfeefb', pC1:'#7fb2d4', pRing:true,
+    stars:true, space:true, night:false, rainbow:false, snowcaps:true, decor:'space', flowers:false,
+    mountain:'rgba(150,190,215,0.85)', hill1:'#cfe8f4', hill2:'#aed4e8',
+    grass1:'#eaf6fb', grass2:'#c4e2f0', dirt1:'#5a7a94', dirt2:'#48667e', dirt3:'#38505f',
+    tuft1:'#aed4e8', tuft2:'#cfe8f4', crystal:'#bfeaff' },
+  { /* 71-80 · Violet nebula world */
+    skyTop:'#0d0618', skyMid:'#2a1450', skyLow:'#4a2a78', skyBot:'#6a3f96',
+    celestial:'planet', pX:1150, pY:96, pR:44, pC0:'#dda0f0', pC1:'#8a4ab0', pRing:false,
+    stars:true, space:true, night:false, rainbow:false, snowcaps:false, decor:'space', flowers:false,
+    mountain:'rgba(92,60,132,0.85)', hill1:'#5a3a86', hill2:'#4a2c70',
+    grass1:'#8a5ab8', grass2:'#6e4396', dirt1:'#4a2c66', dirt2:'#3a2252', dirt3:'#2a183e',
+    tuft1:'#6e4396', tuft2:'#8a5ab8', crystal:'#e8aaff' },
+  { /* 81-90 · Lava planet */
+    skyTop:'#120806', skyMid:'#2e130a', skyLow:'#571f0c', skyBot:'#8a3410',
+    celestial:'planet', pX:1150, pY:94, pR:42, pC0:'#ffd9a0', pC1:'#e05a1e', pRing:false,
+    stars:true, space:true, night:false, rainbow:false, snowcaps:false, decor:'space', flowers:false,
+    mountain:'rgba(64,32,20,0.9)', hill1:'#571f0c', hill2:'#421505',
+    grass1:'#4a4a4a', grass2:'#333333', dirt1:'#7a2c0e', dirt2:'#571f0a', dirt3:'#3d1406',
+    tuft1:'#333333', tuft2:'#444444', crystal:'#ffcf5c' },
+  { /* 91-100 · Crystal world, deep space */
+    skyTop:'#020610', skyMid:'#08202c', skyLow:'#0e3a4a', skyBot:'#14586a',
+    celestial:'planet', pX:1140, pY:104, pR:50, pC0:'#a5f2e8', pC1:'#2a9a94', pRing:true,
+    stars:true, space:true, night:false, rainbow:false, snowcaps:false, decor:'space', flowers:false,
+    mountain:'rgba(30,80,90,0.85)', hill1:'#14586a', hill2:'#0e4252',
+    grass1:'#1f7a86', grass2:'#155e68', dirt1:'#0d3542', dirt2:'#092a34', dirt3:'#06202a',
+    tuft1:'#155e68', tuft2:'#1f7a86', crystal:'#8afff2' }
+];
+function themeIndex(){
+  return Math.min(THEMES.length - 1, Math.floor(state.level / 10));
+}
 /* deterministic 0..1 pseudo-random from a seed, for stable texture detail */
 function hash(n){ var v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }
 
-function drawPoop(x, y, r, angry){
+function drawPoop(x, y, r, angry, kind){
   /* Mega turds (master-unlock only) get a pulsing stink aura so they read as special at a glance */
   if(r >= 34){
     var aura = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 1.9);
@@ -1189,6 +1457,12 @@ function drawPoop(x, y, r, angry){
     { w: 16,   h: 9.5,  cy: 1.5,  top: '#98652f', bot: '#654322' },
     { w: 11,   h: 8,    cy: -6.5, top: '#a9713a', bot: '#774a24' }
   ];
+  if(kind === 'squirter'){
+    /* the Diarrhea Dropper: runnier, olive-green swirls */
+    layers[0].top = '#7d7a26'; layers[0].bot = '#4f4a16';
+    layers[1].top = '#8f8a30'; layers[1].bot = '#5d571c';
+    layers[2].top = '#a39c3a'; layers[2].bot = '#6e6624';
+  }
   layers.forEach(function(L){
     var g = ctx.createLinearGradient(0, L.cy - L.h, 0, L.cy + L.h);
     g.addColorStop(0, L.top); g.addColorStop(1, L.bot);
@@ -1209,6 +1483,15 @@ function drawPoop(x, y, r, angry){
   ctx.fillStyle = 'rgba(255,236,200,0.30)';
   ctx.beginPath(); ctx.ellipse(-8.5, 4.5, 5.5, 3, -0.6, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(-5.5, -5, 3.6, 2, -0.6, 0, Math.PI * 2); ctx.fill();
+  if(kind === 'squirter'){
+    /* runny drips hanging off the bottom, ready to drop */
+    ctx.fillStyle = '#5d571c';
+    ctx.beginPath();
+    ctx.ellipse(-9, 17.5, 2.6, 4.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(1, 19.5, 3, 5.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, 16.5, 2.4, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
   /* eyes */
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(-6, -1.5, 3.6, 0, Math.PI * 2); ctx.arc(6, -1.5, 3.6, 0, Math.PI * 2); ctx.fill();
@@ -1597,53 +1880,149 @@ function drawBush(x, baseY, s){
   ctx.fillStyle = 'rgba(255,255,220,0.16)';
   ctx.beginPath(); ctx.ellipse(x - 8 * s, baseY - 13 * s, 11 * s, 5 * s, 0, Math.PI, Math.PI * 2); ctx.fill();
 }
+function drawCactus(x, baseY, s){
+  ctx.fillStyle = 'rgba(120,84,30,0.35)';
+  ctx.beginPath(); ctx.ellipse(x, baseY + 2, 16 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3e8a4f';
+  roundRect(x - 6 * s, baseY - 78 * s, 12 * s, 78 * s, 6 * s); ctx.fill();
+  roundRect(x - 22 * s, baseY - 56 * s, 9 * s, 30 * s, 4.5 * s); ctx.fill();
+  roundRect(x - 22 * s, baseY - 34 * s, 16 * s, 8 * s, 4 * s); ctx.fill();
+  roundRect(x + 13 * s, baseY - 64 * s, 9 * s, 36 * s, 4.5 * s); ctx.fill();
+  roundRect(x + 6 * s, baseY - 36 * s, 16 * s, 8 * s, 4 * s); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,220,0.20)';
+  roundRect(x - 4 * s, baseY - 74 * s, 3.5 * s, 68 * s, 1.75 * s); ctx.fill();
+  ctx.fillStyle = '#ff8fb2';
+  ctx.beginPath(); ctx.arc(x, baseY - 80 * s, 4.5 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd94d';
+  ctx.beginPath(); ctx.arc(x, baseY - 80 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
+}
+function drawRock(x, baseY, s, TH){
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(x, baseY + 3, 30 * s, 5 * s, 0, 0, Math.PI * 2); ctx.fill();
+  var rg = ctx.createLinearGradient(0, baseY - 52 * s, 0, baseY);
+  rg.addColorStop(0, TH.hill1); rg.addColorStop(1, TH.hill2);
+  ctx.fillStyle = rg;
+  ctx.beginPath();
+  ctx.moveTo(x - 30 * s, baseY);
+  ctx.lineTo(x - 22 * s, baseY - 30 * s);
+  ctx.lineTo(x - 6 * s, baseY - 48 * s);
+  ctx.lineTo(x + 12 * s, baseY - 40 * s);
+  ctx.lineTo(x + 26 * s, baseY - 18 * s);
+  ctx.lineTo(x + 30 * s, baseY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(x - 6 * s, baseY - 48 * s);
+  ctx.lineTo(x + 12 * s, baseY - 40 * s);
+  ctx.lineTo(x + 2 * s, baseY - 26 * s);
+  ctx.lineTo(x - 12 * s, baseY - 32 * s);
+  ctx.closePath(); ctx.fill();
+}
 
 function draw(){
   ctx.save();
   ctx.clearRect(0, 0, W, H);
+  var TH = THEMES[themeIndex()];
   if(CAM.vw < W - 0.5 || CAM.vh < H - 0.5 || Math.abs(CAM.cx - W / 2) > 0.5 || Math.abs(CAM.cy - H / 2) > 0.5){
     /* Portrait window: paint the surround first (sky above the ground line,
        dirt below it, same colours the scene itself uses) so the taller stage
        never shows gaps, then look at the world through the camera window. */
-    ctx.fillStyle = '#79b5dd';
+    ctx.fillStyle = TH.skyMid;
     ctx.fillRect(0, 0, W, H);
     ctx.translate(W / 2, H / 2);
     ctx.scale(W / CAM.vw, H / CAM.vh);
     ctx.translate(-CAM.cx, -CAM.cy);
     var vx0 = CAM.cx - CAM.vw / 2 - 80, vy0 = CAM.cy - CAM.vh / 2 - 80;
     var sky2 = ctx.createLinearGradient(0, 0, 0, GROUND);
-    sky2.addColorStop(0, '#4f9fd8'); sky2.addColorStop(0.45, '#8ec9e8'); sky2.addColorStop(0.8, '#c4e7f2'); sky2.addColorStop(1, '#e6f4e2');
+    sky2.addColorStop(0, TH.skyTop); sky2.addColorStop(0.45, TH.skyMid); sky2.addColorStop(0.8, TH.skyLow); sky2.addColorStop(1, TH.skyBot);
     ctx.fillStyle = sky2;
     ctx.fillRect(vx0, vy0, CAM.vw + 160, GROUND - vy0);
-    ctx.fillStyle = '#59371f';
+    ctx.fillStyle = TH.dirt2;
     ctx.fillRect(vx0, GROUND, CAM.vw + 160, CAM.cy + CAM.vh / 2 + 80 - GROUND);
   }
   if(state.shake > 0.2) ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
 
   /* sky */
   var sky = ctx.createLinearGradient(0, 0, 0, GROUND);
-  sky.addColorStop(0, '#4f9fd8'); sky.addColorStop(0.45, '#8ec9e8'); sky.addColorStop(0.8, '#c4e7f2'); sky.addColorStop(1, '#e6f4e2');
+  sky.addColorStop(0, TH.skyTop); sky.addColorStop(0.45, TH.skyMid); sky.addColorStop(0.8, TH.skyLow); sky.addColorStop(1, TH.skyBot);
   ctx.fillStyle = sky; ctx.fillRect(-20, -20, W + 40, GROUND + 20);
-  /* sun: glow, slowly turning rays, warm core */
-  var sunG = ctx.createRadialGradient(1150, 84, 10, 1150, 84, 120);
-  sunG.addColorStop(0, 'rgba(255,224,102,0.55)'); sunG.addColorStop(1, 'rgba(255,224,102,0)');
-  ctx.fillStyle = sunG;
-  ctx.fillRect(1010, -36, 280, 240);
-  ctx.save();
-  ctx.translate(1150, 84); ctx.rotate(state.time * 0.05);
-  ctx.fillStyle = 'rgba(255,217,77,0.30)';
-  for(var ri = 0; ri < 8; ri++){
-    ctx.rotate(Math.PI / 4);
-    ctx.beginPath();
-    ctx.moveTo(46, -7); ctx.lineTo(72, 0); ctx.lineTo(46, 7);
-    ctx.closePath(); ctx.fill();
+  /* the sky's big feature: sun, moon, or the planet this world hangs under */
+  if(TH.celestial === 'sun'){
+    var sunG = ctx.createRadialGradient(TH.sunX, TH.sunY, 10, TH.sunX, TH.sunY, TH.sunR * 3);
+    sunG.addColorStop(0, TH.sunGlow); sunG.addColorStop(1, 'rgba(255,224,102,0)');
+    ctx.fillStyle = sunG;
+    ctx.fillRect(TH.sunX - 150, TH.sunY - 130, 300, 260);
+    ctx.save();
+    ctx.translate(TH.sunX, TH.sunY); ctx.rotate(state.time * 0.05);
+    ctx.fillStyle = TH.sunRay;
+    for(var ri = 0; ri < 8; ri++){
+      ctx.rotate(Math.PI / 4);
+      ctx.beginPath();
+      ctx.moveTo(TH.sunR + 6, -7); ctx.lineTo(TH.sunR + 32, 0); ctx.lineTo(TH.sunR + 6, 7);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    var sunCore = ctx.createRadialGradient(TH.sunX - 12, TH.sunY - 12, 4, TH.sunX, TH.sunY, TH.sunR + 2);
+    sunCore.addColorStop(0, TH.sunC0); sunCore.addColorStop(0.7, TH.sunC1); sunCore.addColorStop(1, TH.sunC2);
+    ctx.fillStyle = sunCore;
+    ctx.beginPath(); ctx.arc(TH.sunX, TH.sunY, TH.sunR, 0, Math.PI * 2); ctx.fill();
+  } else if(TH.celestial === 'moon'){
+    var moonG = ctx.createRadialGradient(1120, 96, 8, 1120, 96, 110);
+    moonG.addColorStop(0, 'rgba(230,238,255,0.35)'); moonG.addColorStop(1, 'rgba(230,238,255,0)');
+    ctx.fillStyle = moonG;
+    ctx.fillRect(990, -34, 260, 260);
+    var moonC = ctx.createRadialGradient(1108, 84, 4, 1120, 96, 36);
+    moonC.addColorStop(0, '#fdfcf4'); moonC.addColorStop(1, '#d9d5c2');
+    ctx.fillStyle = moonC;
+    ctx.beginPath(); ctx.arc(1120, 96, 34, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(120,118,100,0.20)';
+    [[1110, 86, 7], [1132, 104, 5.5], [1118, 112, 4], [1136, 82, 3.5]].forEach(function(cr){
+      ctx.beginPath(); ctx.arc(cr[0], cr[1], cr[2], 0, Math.PI * 2); ctx.fill();
+    });
+  } else {
+    /* a planet hanging in the sky, ringed on some worlds */
+    var plG = ctx.createRadialGradient(TH.pX, TH.pY, TH.pR * 0.3, TH.pX, TH.pY, TH.pR * 2.6);
+    plG.addColorStop(0, 'rgba(255,255,255,0.20)'); plG.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = plG;
+    ctx.fillRect(TH.pX - TH.pR * 2.6, TH.pY - TH.pR * 2.6, TH.pR * 5.2, TH.pR * 5.2);
+    if(TH.pRing){
+      ctx.save();
+      ctx.translate(TH.pX, TH.pY); ctx.rotate(-0.32);
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = TH.pR * 0.16;
+      ctx.beginPath(); ctx.ellipse(0, 0, TH.pR * 1.55, TH.pR * 0.42, 0, Math.PI, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    var plC = ctx.createRadialGradient(TH.pX - TH.pR * 0.35, TH.pY - TH.pR * 0.35, 4, TH.pX, TH.pY, TH.pR);
+    plC.addColorStop(0, TH.pC0); plC.addColorStop(1, TH.pC1);
+    ctx.fillStyle = plC;
+    ctx.beginPath(); ctx.arc(TH.pX, TH.pY, TH.pR, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(TH.pX, TH.pY, TH.pR, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fillRect(TH.pX - TH.pR, TH.pY - TH.pR * 0.45, TH.pR * 2, TH.pR * 0.22);
+    ctx.fillRect(TH.pX - TH.pR, TH.pY + TH.pR * 0.18, TH.pR * 2, TH.pR * 0.16);
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    ctx.fillRect(TH.pX - TH.pR, TH.pY + TH.pR * 0.52, TH.pR * 2, TH.pR * 0.5);
+    ctx.restore();
+    if(TH.pRing){
+      ctx.save();
+      ctx.translate(TH.pX, TH.pY); ctx.rotate(-0.32);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = TH.pR * 0.16;
+      ctx.beginPath(); ctx.ellipse(0, 0, TH.pR * 1.55, TH.pR * 0.42, 0, 0, Math.PI); ctx.stroke();
+      ctx.restore();
+    }
   }
-  ctx.restore();
-  var sunCore = ctx.createRadialGradient(1138, 72, 4, 1150, 84, 42);
-  sunCore.addColorStop(0, '#fff3b0'); sunCore.addColorStop(0.7, '#ffd94d'); sunCore.addColorStop(1, '#f5b921');
-  ctx.fillStyle = sunCore;
-  ctx.beginPath(); ctx.arc(1150, 84, 40, 0, Math.PI * 2); ctx.fill();
+  /* stars for the night and space skies */
+  if(TH.stars){
+    for(var sti = 0; sti < 90; sti++){
+      var stx = hash(sti * 13.77) * W, sty = hash(sti * 7.31) * 430;
+      var stw = 0.3 + 0.7 * Math.abs(Math.sin(state.time * (0.7 + (sti % 5) * 0.23) + sti * 1.3));
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.75 * stw) + ')';
+      ctx.beginPath(); ctx.arc(stx, sty, (sti % 7 === 0) ? 2.4 : 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   /* rainbow arcing over the forts — big, soft and cheerful against the action */
+  if(TH.rainbow){
   ctx.save();
   ctx.globalAlpha = 0.20; ctx.lineCap = 'round';
   var rbCols = ['#e0483e', '#e8a13a', '#ffd94d', '#5fa84b', '#3f7fd1'];
@@ -1652,6 +2031,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(640, GROUND + 30, 560 - rbi * 14, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
   }
   ctx.restore();
+  }
   /* twinkling sparkles drifting in the light */
   for(var spi = 0; spi < 14; spi++){
     var spx = hash(spi * 17.3) * W, spy = 40 + hash(spi * 9.1) * 300;
@@ -1663,7 +2043,10 @@ function draw(){
     ctx.moveTo(spx, spy - sr); ctx.lineTo(spx, spy + sr);
     ctx.stroke();
   }
-  /* clouds with shaded bellies */
+  /* clouds with shaded bellies (none in space, dimmed at night) */
+  if(!TH.space){
+  ctx.save();
+  if(TH.night) ctx.globalAlpha = 0.38;
   for(var ci = 0; ci < 5; ci++){
     var cx = ((ci * 300 + state.cloudT * (6 + ci * 2)) % (W + 260)) - 130;
     var cy = 50 + ci * 36;
@@ -1681,7 +2064,10 @@ function draw(){
     ctx.ellipse(cx + 2, cy - 10, 30, 13, 0, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
+  }
   /* distant birds */
+  if(TH.decor === 'earth' && !TH.night){
   ctx.strokeStyle = 'rgba(40,60,80,0.65)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
   for(var bi = 0; bi < 3; bi++){
     var bx = ((state.cloudT * (16 + bi * 5) + bi * 430) % (W + 140)) - 70;
@@ -1693,7 +2079,9 @@ function draw(){
     ctx.quadraticCurveTo(bx + 2, by - 4.5, bx + 8, by + flap);
     ctx.stroke();
   }
+  }
   /* butterflies fluttering over the grass */
+  if(TH.decor === 'earth' && !TH.night){
   for(var bfi = 0; bfi < 3; bfi++){
     var bfx = 300 + bfi * 260 + Math.sin(state.time * 0.55 + bfi * 2.4) * 55;
     var bfy = 470 + bfi * 42 + Math.sin(state.time * 1.7 + bfi * 1.9) * 16;
@@ -1706,13 +2094,15 @@ function draw(){
     ctx.fillStyle = '#33302a';
     ctx.beginPath(); ctx.ellipse(bfx, bfy, 1.8, 5, 0, 0, Math.PI * 2); ctx.fill();
   }
+  }
   /* far mountain range with snow caps */
-  ctx.fillStyle = 'rgba(148,178,208,0.85)';
+  ctx.fillStyle = TH.mountain;
   ctx.beginPath();
   ctx.moveTo(-20, GROUND);
   var peaks = [[-20, 548], [110, 480], [225, 530], [345, 458], [465, 528], [585, 484], [715, 540], [845, 466], [975, 530], [1095, 482], [1215, 534], [1300, 500], [1300, GROUND]];
   peaks.forEach(function(pk){ ctx.lineTo(pk[0], pk[1]); });
   ctx.closePath(); ctx.fill();
+  if(TH.snowcaps){
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
   [[345, 458], [845, 466], [110, 480]].forEach(function(pk){
     ctx.beginPath();
@@ -1720,27 +2110,49 @@ function draw(){
     ctx.lineTo(pk[0] + 6, pk[1] + 15); ctx.lineTo(pk[0] - 2, pk[1] + 21); ctx.lineTo(pk[0] - 9, pk[1] + 14);
     ctx.closePath(); ctx.fill();
   });
+  }
   /* rolling hills */
-  ctx.fillStyle = '#93cf7c';
+  ctx.fillStyle = TH.hill1;
   ctx.beginPath(); ctx.ellipse(240, GROUND + 42, 420, 92, 0, Math.PI, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#7cc468';
+  ctx.fillStyle = TH.hill2;
   ctx.beginPath(); ctx.ellipse(980, GROUND + 48, 520, 106, 0, Math.PI, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,230,0.13)';
   ctx.beginPath(); ctx.ellipse(200, GROUND + 30, 260, 55, 0, Math.PI, Math.PI * 2); ctx.fill();
-  /* trees & bushes along the back of the field */
-  drawTree(64, GROUND + 2, 1.0);
-  drawTree(408, GROUND + 2, 0.78);
-  drawTree(648, GROUND + 2, 0.92);
-  drawBush(268, GROUND + 2, 0.9);
-  drawBush(556, GROUND + 2, 0.7);
-  drawBush(716, GROUND + 2, 0.8);
+  /* scenery along the back of the field: trees on Earth, cacti in the
+     desert, rocks and craters out in space */
+  if(TH.decor === 'space'){
+    drawRock(64, GROUND + 2, 1.0, TH);
+    drawRock(408, GROUND + 2, 0.8, TH);
+    drawRock(648, GROUND + 2, 0.92, TH);
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    [268, 556, 716].forEach(function(crx){
+      ctx.beginPath(); ctx.ellipse(crx, GROUND - 2, 30, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.beginPath(); ctx.ellipse(crx, GROUND - 4.5, 30, 4, 0, 0, Math.PI); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    });
+  } else if(TH.decor === 'desert'){
+    drawCactus(64, GROUND + 2, 1.0);
+    drawCactus(408, GROUND + 2, 0.78);
+    drawCactus(648, GROUND + 2, 0.92);
+    drawRock(268, GROUND + 2, 0.55, TH);
+    drawRock(556, GROUND + 2, 0.45, TH);
+    drawRock(716, GROUND + 2, 0.5, TH);
+  } else {
+    drawTree(64, GROUND + 2, 1.0);
+    drawTree(408, GROUND + 2, 0.78);
+    drawTree(648, GROUND + 2, 0.92);
+    drawBush(268, GROUND + 2, 0.9);
+    drawBush(556, GROUND + 2, 0.7);
+    drawBush(716, GROUND + 2, 0.8);
+  }
   /* ground: grass lip, then layered dirt */
   var grassG = ctx.createLinearGradient(0, GROUND, 0, GROUND + 17);
-  grassG.addColorStop(0, '#84cc66'); grassG.addColorStop(1, '#579a41');
+  grassG.addColorStop(0, TH.grass1); grassG.addColorStop(1, TH.grass2);
   ctx.fillStyle = grassG;
   ctx.fillRect(-20, GROUND, W + 40, 17);
   var dirtG = ctx.createLinearGradient(0, GROUND + 17, 0, H + 20);
-  dirtG.addColorStop(0, '#6b4423'); dirtG.addColorStop(0.5, '#59371f'); dirtG.addColorStop(1, '#40260f');
+  dirtG.addColorStop(0, TH.dirt1); dirtG.addColorStop(0.5, TH.dirt2); dirtG.addColorStop(1, TH.dirt3);
   ctx.fillStyle = dirtG;
   ctx.fillRect(-20, GROUND + 17, W + 40, H - GROUND);
   ctx.strokeStyle = 'rgba(0,0,0,0.20)'; ctx.lineWidth = 2;
@@ -1748,26 +2160,45 @@ function draw(){
   ctx.moveTo(-20, GROUND + 40);
   for(var wx = -20; wx <= W + 20; wx += 80) ctx.quadraticCurveTo(wx + 40, GROUND + 36 + hash(wx) * 8, wx + 80, GROUND + 40);
   ctx.stroke();
-  /* grass tufts + tiny flowers on the lip */
-  for(var gi2 = 0; gi2 < 80; gi2++){
-    var tx = hash(gi2 * 3.13) * W, th = 6 + hash(gi2 * 7.7) * 6;
-    ctx.strokeStyle = gi2 % 2 ? '#4e8a3c' : '#69a854'; ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(tx, GROUND + 3); ctx.lineTo(tx - 2.5, GROUND + 3 - th);
-    ctx.moveTo(tx + 2, GROUND + 3); ctx.lineTo(tx + 2, GROUND + 2 - th - 2);
-    ctx.moveTo(tx + 4, GROUND + 3); ctx.lineTo(tx + 6.5, GROUND + 3 - th);
-    ctx.stroke();
-  }
-  var petalCols = ['#ff8fb2', '#ffd94d', '#ffffff', '#c39bff'];
-  for(var fi = 0; fi < 15; fi++){
-    var fx2 = hash(fi * 9.31 + 4) * W, fy2 = GROUND + 1 - hash(fi * 5.7) * 3;
-    ctx.fillStyle = petalCols[fi % 4];
-    for(var pt2 = 0; pt2 < 4; pt2++){
-      var pa = pt2 * Math.PI / 2 + 0.4;
-      ctx.beginPath(); ctx.arc(fx2 + Math.cos(pa) * 2.4, fy2 + Math.sin(pa) * 2.4, 1.9, 0, Math.PI * 2); ctx.fill();
+  /* ground-lip detail: grass tufts and flowers on Earth, glowing crystal
+     shards poking out of the surface in space */
+  if(TH.space){
+    for(var cri = 0; cri < 22; cri++){
+      var crx2 = hash(cri * 6.71) * W, crs = 4 + hash(cri * 3.3) * 7;
+      ctx.save();
+      ctx.translate(crx2, GROUND + 3);
+      ctx.rotate((hash(cri * 9.7) - 0.5) * 0.5);
+      ctx.fillStyle = TH.crystal;
+      ctx.globalAlpha = 0.55 + hash(cri * 4.1) * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(0, -crs * 1.7); ctx.lineTo(crs * 0.55, 0); ctx.lineTo(-crs * 0.55, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
     }
-    ctx.fillStyle = '#f5a623';
-    ctx.beginPath(); ctx.arc(fx2, fy2, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  } else {
+    for(var gi2 = 0; gi2 < 80; gi2++){
+      var tx = hash(gi2 * 3.13) * W, th = 6 + hash(gi2 * 7.7) * 6;
+      ctx.strokeStyle = gi2 % 2 ? TH.tuft1 : TH.tuft2; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(tx, GROUND + 3); ctx.lineTo(tx - 2.5, GROUND + 3 - th);
+      ctx.moveTo(tx + 2, GROUND + 3); ctx.lineTo(tx + 2, GROUND + 2 - th - 2);
+      ctx.moveTo(tx + 4, GROUND + 3); ctx.lineTo(tx + 6.5, GROUND + 3 - th);
+      ctx.stroke();
+    }
+    if(TH.flowers){
+      var petalCols = ['#ff8fb2', '#ffd94d', '#ffffff', '#c39bff'];
+      for(var fi = 0; fi < 15; fi++){
+        var fx2 = hash(fi * 9.31 + 4) * W, fy2 = GROUND + 1 - hash(fi * 5.7) * 3;
+        ctx.fillStyle = petalCols[fi % 4];
+        for(var pt2 = 0; pt2 < 4; pt2++){
+          var pa = pt2 * Math.PI / 2 + 0.4;
+          ctx.beginPath(); ctx.arc(fx2 + Math.cos(pa) * 2.4, fy2 + Math.sin(pa) * 2.4, 1.9, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = '#f5a623';
+        ctx.beginPath(); ctx.arc(fx2, fy2, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
   }
   /* dirt speckles + pebbles */
   ctx.fillStyle = 'rgba(0,0,0,0.16)';
@@ -1871,9 +2302,14 @@ function draw(){
       ctx.fill();
       ctx.save();
       if(pr.rest) ctx.globalAlpha = Math.max(0, 1.4 - pr.restT) / 1.4;
-      drawPoop(pr.x, pr.y, pr.r, true);
+      drawPoop(pr.x, pr.y, pr.r, true, pr.type);
       ctx.restore();
-      if(pr.flying && !pr.boosted){
+      if(pr.flying && pr.type === 'squirter' && !pr.dropped){
+        ctx.font = '600 15px Trebuchet MS, sans-serif';
+        ctx.fillStyle = 'rgba(46,33,24,0.7)';
+        ctx.textAlign = 'center';
+        ctx.fillText('tap to drop diarrhea! 💩', pr.x, pr.y - pr.r - 16);
+      } else if(pr.flying && !pr.boosted){
         ctx.font = '600 15px Trebuchet MS, sans-serif';
         ctx.fillStyle = 'rgba(46,33,24,0.65)';
         ctx.textAlign = 'center';
@@ -1881,6 +2317,27 @@ function draw(){
       }
     }
   }
+
+  /* falling diarrhea drops: wobbling runny blobs on their way down */
+  state.drops.forEach(function(d){
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    var wob = Math.sin(state.time * 22 + d.y * 0.05) * 0.12;
+    ctx.scale(1 + wob, 1 - wob);
+    var dg = ctx.createLinearGradient(0, -d.r, 0, d.r);
+    dg.addColorStop(0, '#a39c3a'); dg.addColorStop(1, '#5d571c');
+    ctx.fillStyle = dg;
+    ctx.beginPath();
+    ctx.moveTo(0, -d.r * 1.25);
+    ctx.quadraticCurveTo(d.r, -d.r * 0.2, d.r * 0.85, d.r * 0.45);
+    ctx.quadraticCurveTo(d.r * 0.6, d.r, 0, d.r);
+    ctx.quadraticCurveTo(-d.r * 0.6, d.r, -d.r * 0.85, d.r * 0.45);
+    ctx.quadraticCurveTo(-d.r, -d.r * 0.2, 0, -d.r * 1.25);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,200,0.35)';
+    ctx.beginPath(); ctx.ellipse(-d.r * 0.3, 0, d.r * 0.22, d.r * 0.4, 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
 
   /* leather pouch cradling the loaded turd, so it visibly sits IN the slingshot */
   if(pr && !pr.flying && state.mode !== 'won' && state.mode !== 'lost'){
@@ -1913,7 +2370,7 @@ function draw(){
   if(pr && !pr.flying && state.mode !== 'won' && state.mode !== 'lost'){
     ctx.strokeStyle = '#b03a2a'; ctx.lineWidth = 6.5;
     ctx.beginPath(); ctx.moveTo(SLING_X - 12, SLING_Y + 6); ctx.lineTo(pr.x, pr.y); ctx.stroke();
-    if(!aiming) drawPoop(pr.x, pr.y, pr.r, true);
+    if(!aiming) drawPoop(pr.x, pr.y, pr.r, true, pr.type);
   }
 
   /* particles: cloudy puffs, glossy droplets */
@@ -2035,8 +2492,8 @@ cv.addEventListener('pointerdown', function(e){
       try{ cv.setPointerCapture(e.pointerId); }catch(err){}
       e.preventDefault();
     }
-  } else if(state.mode === 'flying' && state.projectile && state.projectile.flying && !state.projectile.rest && !state.projectile.boosted){
-    fartBoost();
+  } else if(state.mode === 'flying'){
+    midFlightTap();
   }
 });
 cv.addEventListener('pointermove', function(e){
@@ -2082,6 +2539,29 @@ function endDrag(){
 cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', endDrag);
 
+/* The Diarrhea Dropper's party trick: a splat of diarrhea drops straight
+   down out of the flying turd onto whatever is below it, and the turd
+   itself kicks up a touch and flies on. One drop per flight. */
+function dropSplat(){
+  var pr = state.projectile;
+  if(!pr || pr.dropped) return;
+  pr.dropped = true;
+  state.drops.push({ x: pr.x, y: pr.y + pr.r * 0.7, vy: 40, r: 13 });
+  pr.vy -= 60;
+  tone(520, 110, 0.25, 'sawtooth', 0.10);
+  noiseBurst(0.2, 600, 0.18);
+  addText(pr.x, pr.y - 46, 'SPLAT DROP! 💩', '#c9d64f', 24);
+  burst(pr.x, pr.y + pr.r * 0.5, 5, ['#8a7a2a', '#6e5a1f'], 120, 0.4, 300, 5);
+}
+/* One mid-flight tap does the turd's special move: the Dropper drops its
+   splat first (and can still fart-boost on a later tap); every other turd
+   goes straight to the fart boost. */
+function midFlightTap(){
+  var pr = state.projectile;
+  if(!pr || !pr.flying || pr.rest) return;
+  if(pr.type === 'squirter' && !pr.dropped){ dropSplat(); return; }
+  if(!pr.boosted) fartBoost();
+}
 function fartBoost(){
   var pr = state.projectile;
   if(!pr || pr.boosted) return;
@@ -2109,15 +2589,27 @@ function buildLevelGrid(){
   var g = document.getElementById('lvlGrid');
   g.innerHTML = '';
   LEVELS.forEach(function(lv, i){
+    if(i === 0 || i === 50){
+      var hd = document.createElement('div');
+      hd.className = 'gridhead';
+      hd.textContent = i === 0
+        ? '🌍 World 1 · Earth — Levels 1–50'
+        : '🚀 World 2 · Space — Levels 51–100' + (world2Open() ? '' : ' 🔒 $21.99');
+      g.appendChild(hd);
+    }
     var b = document.createElement('button');
     var st = state.stars[i];
-    b.innerHTML = (i + 1) + '<small>' + (i < state.unlocked ? (st ? '⭐'.repeat(st) : 'play') : '🔒') + '</small>';
+    b.innerHTML = (i + 1) + '<small>' + (canPlay(i) ? (st ? '⭐'.repeat(st) : 'play') : '🔒') + '</small>';
     b.title = 'Level ' + (i + 1) + ' · ' + lv.name;
-    if(i >= state.unlocked) b.className = 'locked';
+    if(!canPlay(i)) b.className = 'locked';
     if(st) b.className = 'done';
     b.setAttribute('aria-label', 'Level ' + (i + 1) + ' ' + lv.name);
     (function(idx){
       b.addEventListener('click', function(){
+        if(idx >= 50 && !world2Open()){
+          shopNote('World 2 is locked — 50 space levels across 5 planets for $21.99 in the shop below. 🚀');
+          return;
+        }
         if(idx >= state.unlocked){
           shopNote('Level ' + (idx + 1) + ' is locked — clear level ' + idx + ' first, or grab the next level for $0.99 below. ⏭');
           return;
@@ -2129,12 +2621,21 @@ function buildLevelGrid(){
   });
 }
 function startLevel(idx, resetTotal){
+  if(idx >= 50 && !world2Open()){
+    state.mode = 'menu';
+    buildLevelGrid();
+    showOverlay('startOverlay');
+    shopNote('World 2 is locked — grab it for $21.99 in the shop below and blast off! 🚀');
+    return;
+  }
   state.level = idx;
   state.score = 0;
   state.banked = false;
   hideOverlays();
   buildLevel(idx);
   updateHUD();
+  if(idx === 37) flashTip('New turd earned: the Diarrhea Dropper! Launch it, then tap again mid-flight to drop a splat straight down! 💩');
+  if(idx === 50) flashTip('Welcome to World 2 — space! A new planet every 10 levels. 🚀');
 }
 /* Full screen is a bonus behind its own button only. Nothing in the Start path
    may touch full screen or orientation: on real phones those calls can rotate
@@ -2181,6 +2682,13 @@ rotBtn.addEventListener('click', function(){
 });
 document.getElementById('playBtn').addEventListener('click', function(){ audio(); startLevel(0, true); });
 document.getElementById('nextBtn').addEventListener('click', function(){
+  if(state.mode === 'won' && state.level === 49 && !world2Open()){
+    state.mode = 'menu';
+    buildLevelGrid();
+    showOverlay('startOverlay');
+    shopNote('World 1 flushed! 🚀 World 2 — 50 space levels on 5 planets — is $21.99 in the shop below.');
+    return;
+  }
   if(state.mode === 'won' && state.level < LEVELS.length - 1) startLevel(state.level + 1, false);
   else startLevel(state.level, state.mode !== 'won');
 });
@@ -2214,6 +2722,7 @@ function promoMsg(text, ok){
 }
 function applyMasterUnlock(silent){
   state.masterUnlocked = true;
+  state.every26 = true;
   state.unlocked = LEVELS.length;
   try{ localStorage.setItem('angryTurdsMaster', 'EVERY26'); }catch(e){}
   saveProgress();
@@ -2221,7 +2730,7 @@ function applyMasterUnlock(silent){
   refreshShop();
   /* refresh the menu level behind the card so its Mega turd shows right away */
   if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
-  if(!silent) promoMsg('Unlocked! All 50 levels + all turd types (Normal, Chonk & Mega) are open. 🎉', true);
+  if(!silent) promoMsg('Unlocked! All 100 levels across both worlds + every turd type are open. 🎉', true);
 }
 function tryPromo(){
   var inp = document.getElementById('promoInput');
@@ -2243,7 +2752,7 @@ document.getElementById('promoInput').addEventListener('keydown', function(e){
 });
 document.addEventListener('keydown', function(e){
   if(e.key === 'r' || e.key === 'R'){ if(state.mode !== 'menu') startLevel(state.level, false); }
-  if(e.key === ' ' && state.mode === 'flying'){ e.preventDefault(); fartBoost(); }
+  if(e.key === ' ' && state.mode === 'flying'){ e.preventDefault(); midFlightTap(); }
   if(e.key === 'Escape' || e.key.toLowerCase() === 'p'){ setPause(state.mode !== 'paused'); }
 });
 
@@ -2275,14 +2784,23 @@ function loadProgress(){
        → returns to the game with ?fullgame=success
      Next Level $0.99  https://buy.stripe.com/eVq00ieoA1hr0Fu5xScAo0B
        → returns to the game with ?nextlevel=success
+     World 2 $21.99  https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C
+       → returns to the game with ?world2=success (50 space levels, a separate world)
    Levels stay earnable by beating the previous level; the purchases are
    shortcuts for when you're stuck. Both unlocks are permanent on this device. */
 function shopNote(text){
   var m = document.getElementById('shopMsg');
   if(m) m.textContent = text;
 }
+function world2Open(){
+  return !!(state.world2Unlocked || state.every26);
+}
+function canPlay(idx){
+  return idx < state.unlocked && (idx < 50 || world2Open());
+}
 function canBuyNext(){
-  return !state.masterUnlocked && state.unlocked < LEVELS.length;
+  if(state.masterUnlocked) return false;
+  return state.unlocked < (world2Open() ? LEVELS.length : 50);
 }
 function refreshShop(){
   var full = state.masterUnlocked;
@@ -2293,6 +2811,11 @@ function refreshShop(){
   for(var j = 0; j < nextLinks.length; j++) nextLinks[j].style.display = showNext ? '' : 'none';
   var lines = document.querySelectorAll('.full-unlocked-line');
   for(var k = 0; k < lines.length; k++) lines[k].hidden = !full;
+  var w2o = world2Open();
+  var w2Links = document.querySelectorAll('.buy-world2-link');
+  for(var m = 0; m < w2Links.length; m++) w2Links[m].style.display = w2o ? 'none' : '';
+  var w2Lines = document.querySelectorAll('.world2-unlocked-line');
+  for(var n = 0; n < w2Lines.length; n++) w2Lines[n].hidden = !w2o;
 }
 function grantFullUnlock(){
   state.masterUnlocked = true;
@@ -2303,15 +2826,15 @@ function grantFullUnlock(){
   buildLevelGrid();
   refreshShop();
   if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
-  shopNote('Full game unlocked! All 50 levels + all turd types (Normal, Chonk & Mega) are open. 🎉');
-  flashTip('Full game unlocked — all 50 levels + Mega turds! 🎉');
+  shopNote('Full game unlocked! All 50 World 1 levels + all turd types (Normal, Chonk & Mega) are open. 🎉');
+  flashTip('Full game unlocked — World 1 + Mega turds! 🎉');
 }
 function grantNextLevel(){
   if(state.masterUnlocked){
     shopNote('Everything is already unlocked on this device — no purchase needed. 🎉');
     return;
   }
-  if(state.unlocked < LEVELS.length){
+  if(state.unlocked < (world2Open() ? LEVELS.length : 50)){
     state.unlocked++;
     saveProgress();
     buildLevelGrid();
@@ -2319,6 +2842,16 @@ function grantNextLevel(){
     shopNote('Next level unlocked — level ' + state.unlocked + ' is open. Good luck in there! 🎉');
     flashTip('Level ' + state.unlocked + ' unlocked! 🎉');
   }
+}
+function grantWorld2(){
+  state.world2Unlocked = true;
+  lsSet('angryTurdsWorld2', '1');
+  if(state.unlocked < 51) state.unlocked = 51;
+  saveProgress();
+  buildLevelGrid();
+  refreshShop();
+  shopNote('World 2 unlocked! 50 space levels across 5 planets are open. 🚀🪐');
+  flashTip('World 2 unlocked — blast off! 🚀');
 }
 /* Stripe sends the player back with ?fullgame=success or ?nextlevel=success.
    Apply the unlock once, then clean those flags out of the address (keeping
@@ -2328,12 +2861,15 @@ function handlePurchaseReturn(){
   try{ params = new URLSearchParams(window.location.search); }catch(e){ return; }
   var full = params.get('fullgame') === 'success';
   var next = params.get('nextlevel') === 'success';
-  if(!full && !next) return;
+  var w2 = params.get('world2') === 'success';
+  if(!full && !next && !w2) return;
   if(full) grantFullUnlock();
+  else if(w2) grantWorld2();
   else if(next) grantNextLevel();
   try{
     params.delete('fullgame');
     params.delete('nextlevel');
+    params.delete('world2');
     var rest = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
   }catch(e){}
@@ -2594,14 +3130,15 @@ function initSocial(){
 
 /* init — restore device progress and unlocks, apply any Stripe return, then build */
 loadProgress();
-try{ if(localStorage.getItem('angryTurdsMaster') === 'EVERY26'){ state.masterUnlocked = true; state.unlocked = LEVELS.length; } }catch(e){}
+try{ if(localStorage.getItem('angryTurdsMaster') === 'EVERY26'){ state.masterUnlocked = true; state.every26 = true; state.unlocked = LEVELS.length; } }catch(e){}
 if(lsGet('angryTurdsFullGame') === '1'){ state.masterUnlocked = true; state.fullPurchased = true; state.unlocked = LEVELS.length; }
+if(lsGet('angryTurdsWorld2') === '1'){ state.world2Unlocked = true; }
 buildLevel(0);
 buildLevelGrid();
 state.mode = 'menu';
 handlePurchaseReturn();
 refreshShop();
-if(state.masterUnlocked) promoMsg('Everything unlocked on this device — all 50 levels + Mega turds! 🎉', true);
+if(state.masterUnlocked) promoMsg('Full access on this device — Mega turds unlocked! 🎉', true);
 initSocial();
 updateHUD();
 </script>
