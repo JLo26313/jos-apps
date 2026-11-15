@@ -2930,7 +2930,7 @@ try{
   var cName = cParams.get('c');
   var cScore = parseInt(cParams.get('s'), 10);
   if(cName && !isNaN(cScore) && cScore >= 0){
-    challenge = { name: String(cName).slice(0, 20), score: Math.min(cScore, 100000) };
+    challenge = { name: String(cName).slice(0, 20), score: Math.min(cScore, 1000000) };
   }
 }catch(e){}
 
@@ -3036,7 +3036,7 @@ function maybeSubmitTotal(){
   var total = totalBest();
   var posted = parseInt(lsGet('at_submitted_best') || '0', 10) || 0;
   if(total > posted && total > 0){
-    submitScore(Math.min(100000, total));
+    submitScore(Math.min(1000000, total));
   } else {
     setAllText('[data-submit-line]', '');
     fetchLeaderboard();
