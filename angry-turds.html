@@ -81,16 +81,20 @@
         flex:0 0 auto;
         text-align:center; color:var(--muted); font-size:.85rem; margin:2px 0 0; font-weight:600;
       }
-      /* Portrait phones: compact chrome, and the field takes the full width and
-         as much height as the screen gives it, so portrait is a real way to play —
-         some phones have rotation locked and some app views never rotate. */
+      /* Portrait phones: compact chrome, and the field keeps its full 16:9
+         shape fitted to the phone's width, centred in the space under the
+         HUD — so the WHOLE game (slingshot on the left, fort on the right)
+         is on screen at once, no panning window hiding half the level.
+         Some phones have rotation locked and some app views never rotate,
+         so portrait has to work standing up. */
       @media (orientation:portrait) and (max-width:860px){
         .wrap{ padding:6px 6px 8px; gap:4px; }
         .stage{
           width:100%;
-          aspect-ratio:auto;
-          height:min(64dvh, 130vw);
-          min-height:300px;
+          aspect-ratio:16 / 9;
+          height:auto;
+          min-height:0;
+          margin-top:auto; margin-bottom:auto;
         }
       }
       /* ---- rotated view (the 🔄 button): a web page inside an app view cannot
@@ -145,6 +149,16 @@
       body.rotated.max .wrap{
         left:50%; top:50%; right:auto; bottom:auto;
         width:100dvh; height:100dvw;
+      }
+      /* big screen in portrait: still the whole game — the stage keeps its
+         16:9 shape and centres in the tall screen rather than stretching
+         into a tall window that crops the sides of the field */
+      @media (orientation:portrait) and (max-width:860px){
+        body.max .stage{
+          flex:0 1 auto; width:100%; height:auto; min-height:0;
+          aspect-ratio:16 / 9; max-height:none;
+          margin-top:auto; margin-bottom:auto;
+        }
       }
       /* ---- short landscape screens (phones sideways): squeeze the chrome, keep the field big ---- */
       @media (orientation:landscape) and (max-height:540px){
@@ -241,7 +255,9 @@
         background:rgba(255,217,77,.25); border:2px solid #d9b96a; border-radius:12px;
         padding:8px 12px; font-weight:800; font-size:.92rem; line-height:1.35;
       }
-      #nameInput{ text-transform:none; letter-spacing:.2px; }
+      [data-name-input]{ text-transform:none; letter-spacing:.2px; }
+      .name-block{ margin:12px auto 0; max-width:360px; }
+      .name-block label{ display:block; font-size:.8rem; font-weight:800; letter-spacing:.4px; color:var(--ink); margin-bottom:6px; }
       .lb-panel{
         margin:12px auto 0; max-width:360px;
         border:1.5px solid var(--line); border-radius:14px; padding:10px 12px 8px; text-align:left;
@@ -358,11 +374,11 @@
               <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · World 1 levels can always be earned by playing, too · World 2 is a separate $21.99 world</div>
               <div class="shopmsg" id="shopMsg" aria-live="polite"></div>
             </div>
-            <div class="promo">
-              <label for="nameInput">Your leaderboard name</label>
+            <div class="name-block">
+              <label>🏆 Your name for the leaderboard</label>
               <div class="promorow">
-                <input id="nameInput" data-name-input type="text" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false" />
-                <button class="btn alt" id="nameSaveBtn" type="button">Save</button>
+                <input data-name-input type="text" placeholder="Type your name" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Your leaderboard name" />
+                <button class="btn alt" data-name-save type="button">Save name</button>
               </div>
               <div class="promomsg" data-name-msg aria-live="polite"></div>
             </div>
@@ -397,6 +413,14 @@
             </div>
             <div class="challenge-result" data-challenge-result></div>
             <div class="submit-line" data-submit-line aria-live="polite"></div>
+            <div class="name-block">
+              <label>🏆 Your name for the leaderboard</label>
+              <div class="promorow">
+                <input data-name-input type="text" placeholder="Type your name" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Your leaderboard name" />
+                <button class="btn alt" data-name-save type="button">Save name</button>
+              </div>
+              <div class="promomsg" data-name-msg aria-live="polite"></div>
+            </div>
             <div class="lb-panel">
               <div class="lb-head"><span class="lb-title">🏆 Top flushers — live leaderboard</span><button type="button" class="lb-refresh" data-lb-refresh>↻ Refresh</button></div>
               <div data-lb-rows><div class="lb-empty">Loading scores…</div></div>
@@ -2410,14 +2434,14 @@ function draw(){
 }
 
 /* ============================== camera ==============================
-   The canvas backing is always 1280x720 and the stage is 16:9 on desktop and
-   landscape phones — there the camera is the identity and nothing changes.
-   In a tall portrait stage the whole field used to shrink into a thin strip
-   at the top of the screen, which reads as "the game didn't load". Instead
-   the camera now shows a window of the world at a readable size: it rests on
-   the slingshot while you aim and rides along with the turd in flight. The
-   window always keeps the stage's own aspect ratio, so the picture is never
-   stretched, and turning the phone sideways eases back to the full field. */
+   The canvas backing is always 1280x720 and the stage is 16:9 on desktop,
+   landscape phones AND portrait phones (portrait fits the whole field to
+   the phone's width) — there the camera is the identity and the whole game
+   is on screen at once. The window below is only a fallback for any stage
+   that still ends up taller than 16:9: it shows a window of the world at a
+   readable size, resting on the slingshot while you aim and riding along
+   with the turd in flight, always keeping the stage's own aspect ratio so
+   the picture is never stretched. */
 var CAM = { cx: W / 2, cy: H / 2, vw: W, vh: H };
 var camInit = false;
 function camTarget(){
@@ -2998,7 +3022,9 @@ function submitScore(total){
   setAllText('[data-submit-line]', 'Posting your new best total…');
   db.ref('angryTurdsScores').push({ name: playerName || 'Player', score: total, date: todayStr() }).then(function(){
     lsSet('at_submitted_best', String(totalBest()));
-    setAllText('[data-submit-line]', '🏆 New best total posted to the live leaderboard!');
+    setAllText('[data-submit-line]', playerName
+      ? '🏆 New best total posted to the live leaderboard!'
+      : '🏆 Posted as "Player" — add your name just below so the board shows you!');
     fetchLeaderboard();
   }).catch(function(){
     setAllText('[data-submit-line]', "Couldn't post that score — the leaderboard didn't answer.");
@@ -3068,30 +3094,50 @@ function copyLink(text){
   else showFail();
 }
 function initSocial(){
-  var input = document.querySelector('[data-name-input]');
-  var msg = document.querySelector('[data-name-msg]');
-  function saveName(){
-    if(!input) return;
-    var v = (input.value || '').trim().slice(0, 20);
-    if(!v){ if(msg) msg.textContent = 'Type a name first — it shows on the leaderboard.'; return; }
+  /* The name entry sits right with the leaderboard on BOTH the start screen
+     and the level-complete screen — wire every copy and keep them in sync,
+     so a name typed on either one is the name the next score posts under. */
+  var inputs = document.querySelectorAll('[data-name-input]');
+  function setNameMsgs(text, ok){
+    var msgs = document.querySelectorAll('[data-name-msg]');
+    for(var m = 0; m < msgs.length; m++){
+      msgs[m].textContent = text;
+      msgs[m].className = 'promomsg' + (ok ? ' ok' : '');
+    }
+  }
+  function saveName(fromInput){
+    var v = '';
+    if(fromInput) v = (fromInput.value || '').trim();
+    if(!v){
+      for(var i = 0; i < inputs.length; i++){
+        var t = (inputs[i].value || '').trim();
+        if(t){ v = t; break; }
+      }
+    }
+    v = v.slice(0, 20);
+    if(!v){ setNameMsgs('Type a name first — it shows on the leaderboard.', false); return; }
     playerName = v;
-    input.value = v;
+    for(var j = 0; j < inputs.length; j++) inputs[j].value = v;
     lsSet('at_player_name', v);
-    if(msg){ msg.textContent = "Saved — you're " + v + ' on the leaderboard ✓'; msg.className = 'promomsg ok'; }
+    setNameMsgs("Saved — you're " + v + ' on the leaderboard ✓', true);
     renderLbRows();
   }
-  if(input){
-    if(playerName){
-      input.value = playerName;
-      if(msg) msg.textContent = 'Playing as ' + playerName;
-    }
-    input.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){ e.preventDefault(); saveName(); }
-      e.stopPropagation();
-    });
+  for(var n = 0; n < inputs.length; n++){
+    (function(inp){
+      if(playerName) inp.value = playerName;
+      inp.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){ e.preventDefault(); saveName(inp); }
+        e.stopPropagation();
+      });
+    })(inputs[n]);
   }
-  var saveBtn = document.getElementById('nameSaveBtn');
-  if(saveBtn) saveBtn.addEventListener('click', function(){ audio(); saveName(); });
+  if(playerName) setNameMsgs('Playing as ' + playerName, false);
+  var saveBtns = document.querySelectorAll('[data-name-save]');
+  for(var s = 0; s < saveBtns.length; s++){
+    (function(btn){
+      btn.addEventListener('click', function(){ audio(); saveName(null); });
+    })(saveBtns[s]);
+  }
   if(challenge){
     var banners = document.querySelectorAll('[data-challenge-banner]');
     for(var b = 0; b < banners.length; b++){
