@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>Rate My Landlord</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#f4f4f2;
+    --surface:#ffffff;
+    --surface-2:#eceee9;
+    --ink:#1c2321;
+    --ink-2:#4b5551;
+    --ink-3:#77817c;
+    --line:#d9ddd6;
+    --accent:#0e5f4f;
+    --accent-ink:#ffffff;
+    --accent-soft:#dcefe8;
+    --star:#d97706;
+    --star-empty:#c9cdc6;
+    --danger:#b42318;
+    --warn-bg:#fff4e0;
+    --warn-ink:#7a4a00;
+    --warn-line:#e8c87a;
+    --shadow:0 1px 2px rgba(20,30,25,.06),0 8px 24px rgba(20,30,25,.06);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#141816;
+      --surface:#1e2421;
+      --surface-2:#262d29;
+      --ink:#eef1ee;
+      --ink-2:#b9c2bc;
+      --ink-3:#8b968f;
+      --line:#333b36;
+      --accent:#2ea88a;
+      --accent-ink:#0b1713;
+      --accent-soft:#1d332c;
+      --star:#f2a93b;
+      --star-empty:#3d4741;
+      --danger:#ff8a7a;
+      --warn-bg:#33270f;
+      --warn-ink:#f2cd7e;
+      --warn-line:#6b551f;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]),textarea{min-height:2.25rem}
+  button{font:inherit;cursor:pointer}
+  input,select,textarea{font:inherit;color:var(--ink)}
+  a{color:var(--accent)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px 56px}
+
+  /* ---------- Header / hero ---------- */
+  header.hero{padding:34px 0 8px}
+  .hero h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(2rem,6vw,3.1rem);line-height:1.05;margin:0 0 10px;letter-spacing:-.01em;font-weight:700}
+  .hero h1 em{font-style:normal;color:var(--accent)}
+  .hero p.lede{margin:0 0 22px;font-size:1.08rem;color:var(--ink-2);max-width:620px}
+  .searchbar{display:flex;gap:10px;flex-wrap:wrap}
+  .searchbar .field{flex:1 1 260px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:6px 8px 6px 18px;box-shadow:var(--shadow)}
+  .searchbar .field:focus-within{border-color:var(--accent)}
+  .searchbar svg{flex:none;color:var(--ink-3)}
+  .searchbar input{flex:1;border:0;background:transparent;outline:none;font-size:1.02rem;min-width:0;padding:6px 0}
+  .searchbar input::placeholder{color:var(--ink-3)}
+  .btn{border:0;border-radius:999px;padding:10px 20px;font-weight:650;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;gap:8px;justify-content:center;text-decoration:none}
+  .btn:active{transform:translateY(1px)}
+  .btn.secondary{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.small{padding:7px 14px;font-size:.92rem}
+  .btn:disabled{opacity:.55;cursor:default}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:20px 2px 4px;color:var(--ink-2);font-size:.95rem}
+  .stats strong{color:var(--ink);font-size:1.15rem;display:block;line-height:1.2}
+  .status-note{margin:14px 2px 0;font-size:.9rem;color:var(--ink-3);display:none}
+  .status-note.show{display:block}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:26px 0 16px}
+  .toolbar h2{font-family:Georgia,serif;font-size:1.45rem;margin:0;flex:1 1 auto}
+  .toolbar label{font-size:.9rem;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+  .toolbar select{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+
+  /* ---------- Cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+  .card-top{display:flex;gap:14px;align-items:flex-start}
+  .avatar{flex:none;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;font-size:1.15rem;color:#fff}
+  .card h3{margin:0;font-size:1.18rem;line-height:1.25}
+  .loc{color:var(--ink-2);font-size:.93rem;margin-top:2px}
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);margin-top:6px}
+  .rating-row{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .rating-num{font-family:Georgia,serif;font-size:1.9rem;font-weight:700;line-height:1}
+  .stars{color:var(--star);font-size:1.05rem;letter-spacing:2px;line-height:1;white-space:nowrap}
+  .stars .off{color:var(--star-empty)}
+  .rev-count{color:var(--ink-3);font-size:.9rem}
+  .mini-cats{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:.86rem;color:var(--ink-2)}
+  .mini-cats .mc{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line);padding-bottom:3px}
+  .mini-cats .mc b{color:var(--ink);font-weight:650}
+  .snippet{font-size:.94rem;color:var(--ink-2);margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .snippet::before{content:"“"}
+  .snippet::after{content:"”"}
+  .card .btn{margin-top:auto;align-self:flex-start}
+  .no-reviews{color:var(--ink-3);font-size:.93rem;font-style:italic}
+  .empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:34px 22px;text-align:center;color:var(--ink-2)}
+  .empty h3{margin:0 0 6px;color:var(--ink);font-family:Georgia,serif;font-size:1.25rem}
+  .empty p{margin:0 0 16px}
+
+  /* ---------- Panels / forms ---------- */
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin:18px 0}
+  .panel h3{font-family:Georgia,serif;font-size:1.35rem;margin:0 0 6px}
+  .panel p.sub{margin:0 0 16px;color:var(--ink-2);font-size:.95rem}
+  .hidden{display:none !important}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form-grid .full{grid-column:1/-1}
+  label.fl{display:block;font-size:.88rem;font-weight:650;margin-bottom:6px}
+  .hint{font-weight:400;color:var(--ink-3);font-size:.82rem}
+  .textin,select.textin,textarea.textin{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+  .textin:focus{border-color:var(--accent)}
+  textarea.textin{min-height:110px;resize:vertical}
+  .form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+  .form-msg{font-size:.93rem;margin-top:12px;display:none}
+  .form-msg.show{display:block}
+  .form-msg.err{color:var(--danger)}
+  .form-msg.ok{color:var(--accent)}
+  .honest{background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:.9rem;color:var(--ink);margin-bottom:16px}
+  .honest b{display:block;margin-bottom:2px}
+
+  /* star input */
+  .star-input{display:flex;gap:2px}
+  .star-input button{background:none;border:0;padding:4px;font-size:1.7rem;line-height:1;color:var(--star-empty);min-width:40px;min-height:40px}
+  .star-input button.on{color:var(--star)}
+  .star-input button:focus-visible{outline:2px solid var(--accent);border-radius:6px}
+  .rate-row{display:flex;align-items:center;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;padding:7px 0;border-bottom:1px dotted var(--line)}
+  .rate-row:last-of-type{border-bottom:0}
+  .rate-row .rl{font-size:.95rem;font-weight:600}
+
+  /* ---------- Detail ---------- */
+  .backlink{background:none;border:0;color:var(--accent);font-weight:650;padding:10px 4px;display:inline-flex;gap:6px;align-items:center}
+  .detail-head{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .detail-head .avatar{width:68px;height:68px;font-size:1.5rem}
+  .detail-head h2{font-family:Georgia,serif;font-size:2rem;margin:0;line-height:1.15}
+  .score-block{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0 6px}
+  .big-score{text-align:left}
+  .big-score .n{font-family:Georgia,serif;font-size:3.4rem;font-weight:700;line-height:1}
+  .big-score .stars{font-size:1.3rem;display:block;margin:6px 0 4px}
+  .cat-bars{flex:1 1 300px;max-width:460px;display:grid;gap:9px}
+  .cat-bar{display:grid;grid-template-columns:130px 1fr 34px;align-items:center;gap:10px;font-size:.92rem}
+  .cat-bar .track{height:9px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+  .cat-bar .fill{height:100%;background:var(--accent);border-radius:99px}
+  .cat-bar .v{text-align:right;font-weight:650}
+  .review{border-top:1px solid var(--line);padding:18px 0}
+  .review:first-of-type{border-top:0}
+  .review .r-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .review .r-name{font-weight:700}
+  .review .r-meta{color:var(--ink-3);font-size:.86rem}
+  .review h4{margin:8px 0 4px;font-size:1.05rem}
+  .review p{margin:0;color:var(--ink-2)}
+  .review .r-cats{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:.83rem;color:var(--ink-3)}
+  .review .r-cats b{color:var(--ink-2)}
+  .section-title{font-family:Georgia,serif;font-size:1.4rem;margin:28px 0 4px}
+
+  /* ---------- Quick-select tags ---------- */
+  .tag-picker{margin-top:18px;border-top:1px dotted var(--line);padding-top:16px}
+  .tag-picker .tp-label{font-size:.88rem;font-weight:650;margin:0 0 4px}
+  .tag-picker .tp-hint{font-size:.82rem;color:var(--ink-3);margin:0 0 12px}
+  .tag-group-label{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:12px 0 7px}
+  .tag-group-label:first-of-type{margin-top:0}
+  .tag-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .tag-chip{border:1.5px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:999px;padding:7px 13px;font-size:.88rem;font-weight:600;line-height:1.25;min-height:2.25rem}
+  .tag-chip:hover{border-color:var(--ink-3)}
+  .tag-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .tag-chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+  .tag-chip.flag[aria-pressed="true"]{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-ink)}
+  .tag-summary{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin:20px 0 4px}
+  .tag-summary h3{font-family:Georgia,serif;font-size:1.15rem;margin:0 0 10px}
+  .tag-summary p{margin:0 0 10px;font-size:.95rem;color:var(--ink-2)}
+  .tag-summary p:last-child{margin-bottom:0}
+  .tag-summary .ts-label{font-weight:700;color:var(--ink)}
+  .tag-summary .ts-label.flag{color:var(--danger)}
+  .ts-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+  .ts-pill{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;font-weight:600;padding:4px 11px;border-radius:999px;background:var(--accent-soft);color:var(--ink);border:1px solid transparent}
+  .ts-pill.flag{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+  .ts-pill .n{font-weight:700;opacity:.75;font-size:.78rem}
+  .r-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .r-tag{font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink)}
+  .r-tag.flag{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line)}
+
+  /* ---------- Review media ---------- */
+  .media-section{margin-top:18px;border-top:1px dotted var(--line);padding-top:16px}
+  .media-section .mp-label{font-size:.88rem;font-weight:650;margin:0 0 4px}
+  .media-section .mp-hint{font-size:.82rem;color:var(--ink-3);margin:0 0 12px;line-height:1.45}
+  .media-pickers{display:grid;gap:10px}
+  .media-picker-row{display:flex;flex-direction:column;align-items:flex-start}
+  .media-btn{cursor:pointer}
+  .photo-preview{display:flex;flex-wrap:wrap;gap:10px}
+  .photo-preview:not(:empty){margin-top:10px}
+  .thumb-wrap{position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2);flex:none}
+  .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb-remove{position:absolute;top:4px;right:4px;width:24px;height:24px;min-height:0;border-radius:50%;border:0;background:rgba(0,0,0,.72);color:#fff;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+  .file-preview:not(:empty){margin-top:10px}
+  .file-chip{display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 12px;font-size:.88rem;max-width:100%}
+  .file-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+  .file-chip .fsize{color:var(--ink-3);font-size:.8rem;white-space:nowrap}
+  .file-remove{border:0;background:var(--surface-2);border-radius:50%;width:26px;height:26px;min-height:0;padding:0;line-height:1;font-size:14px;cursor:pointer;flex:none}
+  .r-media{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .r-media a{display:block;line-height:0}
+  .r-media-img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;background:var(--surface-2)}
+  .r-media-video{width:100%;max-width:440px;border-radius:10px;background:#000;display:block}
+  .r-media-audio{width:100%;max-width:440px;display:block}
+  @media (max-width:560px){.r-media-img{width:96px;height:96px}}
+
+  /* ---------- Rental details & maps ---------- */
+  .rental-line{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.9rem;color:var(--ink-2)}
+  .rental-chip{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.02em;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink)}
+  .rental-rent{font-weight:650;color:var(--ink)}
+  .addr-line{color:var(--ink-3);font-size:.88rem;margin-top:2px}
+  .map-section{margin:4px 0 8px}
+  .map-section h2{font-family:Georgia,serif;font-size:1.45rem;margin:0 0 4px}
+  .map-section p.sub{margin:0 0 12px;color:var(--ink-2);font-size:.95rem}
+  .map-box{height:360px;border-radius:var(--radius);border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow);background:var(--surface-2);z-index:0}
+  .map-box.small{height:240px;margin:18px 0 6px}
+  .map-pop b{font-size:1rem;color:#1c2321}
+  .map-pop .mp-meta{color:#4b5551;font-size:.88rem;margin:2px 0 8px}
+  .map-pop .btn{border:0;border-radius:999px;padding:7px 14px;font-weight:650;background:#0e5f4f;color:#fff;font-size:.88rem;cursor:pointer}
+  @media (prefers-color-scheme: dark){
+    .map-box .leaflet-tile-pane{filter:brightness(.82) saturate(.75)}
+  }
+  @media (max-width:560px){.map-box{height:300px}.map-box.small{height:210px}}
+
+  footer{margin-top:44px;border-top:1px solid var(--line);padding-top:18px;color:var(--ink-3);font-size:.88rem}
+  footer p{margin:0 0 8px;max-width:720px}
+
+  @media (max-width:560px){
+    .star-input button{min-width:36px;min-height:36px;font-size:1.5rem;padding:2px}
+    .form-grid{grid-template-columns:1fr}
+    .cat-bar{grid-template-columns:112px 1fr 30px}
+    .grid{grid-template-columns:1fr}
+    .hero{padding-top:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ LIST VIEW ============ -->
+  <div id="listView">
+    <header class="hero">
+      <h1>Rate My <em>Landlord</em></h1>
+      <p class="lede">Real reviews from real renters. Search a landlord or property manager before you sign a lease — and share how yours treated you.</p>
+      <form class="searchbar" id="searchForm" role="search">
+        <div class="field">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+          <input id="searchInput" type="search" placeholder="Search by landlord name, city, or state…" aria-label="Search landlords by name, city, or state" autocomplete="off" />
+        </div>
+        <button class="btn" type="submit">Search</button>
+        <button class="btn secondary" type="button" id="addLandlordBtn">+ Add a landlord</button>
+      </form>
+      <div class="stats" id="statsBar" aria-live="polite"></div>
+      <p class="status-note" id="syncNote"></p>
+    </header>
+
+    <!-- Add landlord panel -->
+    <section class="panel hidden" id="addPanel" aria-labelledby="addPanelTitle">
+      <h3 id="addPanelTitle">Add a landlord</h3>
+      <p class="sub">Don't see your landlord listed? Add them here, then be the first to review them. Use the name on your lease or the management company name.</p>
+      <form id="addForm" novalidate>
+        <div class="form-grid">
+          <div>
+            <label class="fl" for="addName">Landlord or company name *</label>
+            <input class="textin" id="addName" maxlength="80" placeholder="e.g. Jane Doe Properties" required />
+          </div>
+          <div>
+            <label class="fl" for="addCity">City *</label>
+            <input class="textin" id="addCity" maxlength="60" placeholder="e.g. Columbus" required />
+          </div>
+          <div>
+            <label class="fl" for="addState">State * <span class="hint">(2-letter code, e.g. OH)</span></label>
+            <input class="textin" id="addState" maxlength="2" placeholder="OH" style="text-transform:uppercase" required />
+          </div>
+          <div>
+            <label class="fl" for="addStyle">Rental style</label>
+            <select class="textin" id="addStyle">
+              <option>Apartment</option>
+              <option>House</option>
+              <option>Room</option>
+              <option>Duplex</option>
+              <option>Condo</option>
+              <option>Townhouse</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl" for="addRent">Monthly rent <span class="hint">($ — optional)</span></label>
+            <input class="textin" id="addRent" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 1450" />
+          </div>
+          <div class="full">
+            <label class="fl" for="addAddress">Address / location <span class="hint">(street address or area — places this rental on the map)</span></label>
+            <input class="textin" id="addAddress" maxlength="200" placeholder="e.g. 1200 SW Morrison St, Portland, OR — or just a neighborhood" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit" id="addSubmit">Add landlord</button>
+          <button class="btn secondary" type="button" id="addCancel">Cancel</button>
+        </div>
+        <p class="form-msg" id="addMsg" role="alert"></p>
+      </form>
+    </section>
+
+    <div class="toolbar">
+      <h2 id="listHeading">Landlords</h2>
+      <label for="sortSel">Sort
+        <select id="sortSel">
+          <option value="rating" selected>Highest rated</option>
+          <option value="reviews">Most reviewed</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </label>
+    </div>
+
+    <section class="map-section" id="mapSection" aria-labelledby="mapHeading">
+      <h2 id="mapHeading">Where they rent</h2>
+      <p class="sub">Every reviewed rental with a known location. Tap a pin to open that landlord.</p>
+      <div class="map-box" id="homeMap" role="application" aria-label="Map of reviewed rentals"></div>
+      <p class="status-note" id="mapNote"></p>
+    </section>
+
+    <div id="listArea" aria-live="polite">
+      <p style="color:var(--ink-3)">Loading landlords and reviews…</p>
+    </div>
+  </div>
+
+  <!-- ============ DETAIL VIEW ============ -->
+  <div id="detailView" class="hidden">
+    <button class="backlink" id="backBtn" type="button">← All landlords</button>
+    <div id="detailArea"></div>
+  </div>
+
+  <footer>
+    <p>Reviews are renters' own experiences and opinions. Sample listings are fictional examples shown so you can see how the site works — they're marked “Sample listing” wherever they appear.</p>
+    <p>Keep reviews honest and factual. Never post anyone's phone number, email address, or home address.</p>
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Seed data (fictional samples) ================= */
+  var SEEDS = {
+    "seed-1": { name:"Margaret Ellis", city:"Portland", state:"OR", seed:true, rentalStyle:"House", rentAmount:1850, lat:45.5152, lng:-122.6784 },
+    "seed-2": { name:"Douglas Chen", city:"Austin", state:"TX", seed:true, rentalStyle:"Apartment", rentAmount:1325, lat:30.2672, lng:-97.7431 },
+    "seed-3": { name:"Sunrise Property Group", city:"Denver", state:"CO", seed:true, rentalStyle:"Apartment", rentAmount:1675, lat:39.7392, lng:-104.9903 },
+    "seed-4": { name:"Robert Kowalski", city:"Chicago", state:"IL", seed:true, rentalStyle:"Apartment", rentAmount:1190, lat:41.8781, lng:-87.6298 },
+    "seed-5": { name:"Elena Vasquez", city:"San Diego", state:"CA", seed:true, rentalStyle:"Duplex", rentAmount:2400, lat:32.7157, lng:-117.1611 },
+    "seed-6": { name:"James Whitfield", city:"Nashville", state:"TN", seed:true, rentalStyle:"House", rentAmount:1575, lat:36.1627, lng:-86.7816 }
+  };
+  var SEED_REVIEWS = {
+    "seed-1": [
+      { reviewerName:"Priya S.", overall:5, responsiveness:5, maintenance:4, fairness:5, communication:5, title:"Fixed our heater the same day", text:"Called about the furnace on a Saturday morning and Margaret had a tech out by that afternoon. Rent stayed flat at renewal and she returned our full deposit with an itemized statement within two weeks.", propertyType:"House", date:"2026-09-14", tags:"fixes-things-fast,fair-with-deposit,good-communicator" },
+      { reviewerName:"Marcus T.", overall:4, responsiveness:4, maintenance:4, fairness:4, communication:5, title:"Solid, no surprises", text:"Lived here two years. Maintenance requests took a couple of days unless it was urgent, but everything was handled and she always gave 24 hours notice before entering. Would rent from her again.", propertyType:"Duplex", date:"2026-04-02", tags:"respectful-of-privacy,good-communicator" },
+      { reviewerName:"Alana R.", overall:5, responsiveness:5, maintenance:5, fairness:5, communication:4, title:"Best landlord I've had", text:"Snow removal, lawn care, and a plumber within hours when a pipe leaked. She treats the place like her own home and treats tenants like neighbors.", propertyType:"House", date:"2025-11-19", tags:"fixes-things-fast,respectful-of-privacy" }
+    ],
+    "seed-2": [
+      { reviewerName:"Jordan K.", overall:2, responsiveness:2, maintenance:1, fairness:3, communication:2, title:"AC was out for nine days in August", text:"Our AC died during a heat wave and it took over a week and several calls to get it repaired. Rent is fair for the area, but getting anything fixed takes constant follow-up.", propertyType:"Apartment", date:"2026-08-27", tags:"slow-repairs,ignores-complaints" },
+      { reviewerName:"Sam W.", overall:3, responsiveness:3, maintenance:3, fairness:2, communication:3, title:"Fine until move-out", text:"Day to day it was okay, but $450 was taken from my deposit for 'cleaning' even though I left the unit spotless and had photos. Disputing it went nowhere.", propertyType:"Apartment", date:"2026-01-10", tags:"keeps-deposit-unfairly,demands-rent-early" },
+      { reviewerName:"Riley M.", overall:2, responsiveness:1, maintenance:2, fairness:3, communication:2, title:"Hard to reach", text:"Emails went unanswered for days at a time. When the dishwasher leaked it took three weeks to get someone out. The unit itself is nice, the management is the problem.", propertyType:"Condo", date:"2025-10-05", tags:"slow-repairs,ignores-complaints" }
+    ],
+    "seed-3": [
+      { reviewerName:"Devon H.", overall:3, responsiveness:3, maintenance:4, fairness:3, communication:2, title:"Professional but impersonal", text:"Big company, so everything runs through a portal. Work orders get done, usually within a week, but you'll never talk to the same person twice and lease terms are completely non-negotiable.", propertyType:"Apartment", date:"2026-06-21" },
+      { reviewerName:"Casey L.", overall:4, responsiveness:4, maintenance:4, fairness:3, communication:4, title:"Decent large complex", text:"Grounds are kept up, maintenance staff are friendly, and the online payment system is easy. Rent went up 8% at renewal with little explanation, which stung.", propertyType:"Apartment", date:"2026-02-15", tags:"raises-rent-often" },
+      { reviewerName:"Noor A.", overall:3, responsiveness:2, maintenance:3, fairness:4, communication:3, title:"Slow on non-emergencies", text:"A broken garbage disposal waited 12 days. Emergencies were handled fast, to be fair. Read the lease carefully — there are a lot of small fees.", propertyType:"Townhouse", date:"2025-12-08", tags:"slow-repairs" }
+    ],
+    "seed-4": [
+      { reviewerName:"Tom B.", overall:1, responsiveness:1, maintenance:1, fairness:1, communication:1, title:"Avoid if you can", text:"Heat issues all winter, calls ignored for weeks, and entry without notice twice that I know of. I ended up filing a complaint with the city before the boiler was finally repaired.", propertyType:"Apartment", date:"2026-03-03", tags:"enters-without-notice,ignores-complaints,threatens-eviction,slow-repairs" },
+      { reviewerName:"Grace N.", overall:2, responsiveness:2, maintenance:1, fairness:2, communication:2, title:"Building is neglected", text:"Hallways are dirty, the laundry machines have been broken for months, and repairs are patched rather than fixed. The location is the only reason people stay.", propertyType:"Apartment", date:"2025-09-22", tags:"slow-repairs,ignores-complaints" }
+    ],
+    "seed-5": [
+      { reviewerName:"Hannah P.", overall:5, responsiveness:5, maintenance:5, fairness:4, communication:5, title:"Responsive and fair", text:"Elena answers texts the same day and has a great handyman. When my job changed and I needed to break the lease a month early, she worked with me instead of just pointing at the contract.", propertyType:"Duplex", date:"2026-07-30", tags:"fixes-things-fast,good-communicator,fair-with-deposit" },
+      { reviewerName:"Chris D.", overall:4, responsiveness:4, maintenance:5, fairness:4, communication:4, title:"Great experience overall", text:"Unit was spotless at move-in, appliances all worked, and the one repair we needed was done in two days. Parking is tight, but that's the neighborhood, not her fault.", propertyType:"House", date:"2026-05-11", tags:"fixes-things-fast" }
+    ],
+    "seed-6": [
+      { reviewerName:"Whitney J.", overall:4, responsiveness:5, maintenance:4, fairness:3, communication:4, title:"Quick to respond, watch the fees", text:"James replies fast and keeps the property in good shape. Just read the lease — there's a fee for almost everything, including paying rent by card.", propertyType:"House", date:"2026-10-01" },
+      { reviewerName:"Omar F.", overall:3, responsiveness:3, maintenance:3, fairness:3, communication:3, title:"Perfectly average", text:"Nothing terrible, nothing great. Repairs took about a week, rent was mid-range for the area, deposit came back minus a small cleaning charge that seemed reasonable.", propertyType:"Apartment", date:"2025-08-17" },
+      { reviewerName:"Beth C.", overall:4, responsiveness:4, maintenance:4, fairness:4, communication:5, title:"Would renew", text:"Renewed for a second year. He's straightforward about costs up front and gave plenty of notice about a rent increase, which I appreciated.", propertyType:"Townhouse", date:"2026-01-28", tags:"good-communicator,respectful-of-privacy" }
+    ]
+  };
+  var AVATAR_COLORS = ["#0e5f4f","#8a4b0f","#31517d","#6d3b8a","#8a2f35","#205c6e","#5d621f","#7a3b12"];
+
+  /* ================= Quick-select tags ================= */
+  var TAGS = [
+    { id:"fixes-things-fast", label:"Fixes things fast", kind:"praise" },
+    { id:"fair-with-deposit", label:"Fair with deposit", kind:"praise" },
+    { id:"good-communicator", label:"Good communicator", kind:"praise" },
+    { id:"respectful-of-privacy", label:"Respectful of privacy", kind:"praise" },
+    { id:"demands-rent-early", label:"Demands rent early", kind:"flag" },
+    { id:"slow-repairs", label:"Slow repairs", kind:"flag" },
+    { id:"keeps-deposit-unfairly", label:"Keeps deposit unfairly", kind:"flag" },
+    { id:"enters-without-notice", label:"Enters without notice", kind:"flag" },
+    { id:"raises-rent-often", label:"Raises rent often", kind:"flag" },
+    { id:"ignores-complaints", label:"Ignores complaints", kind:"flag" },
+    { id:"threatens-eviction", label:"Threatens eviction", kind:"flag" },
+    { id:"accepts-sexual-favors", label:"Accepts sexual favors", kind:"flag" }
+  ];
+  var TAG_BY_ID = {};
+  TAGS.forEach(function(t){ TAG_BY_ID[t.id] = t; });
+  function parseTags(raw){
+    if (!raw) return [];
+    var seen = {}, out = [];
+    String(raw).split(",").forEach(function(part){
+      var id = part.trim().toLowerCase();
+      if (id && TAG_BY_ID[id] && !seen[id]){ seen[id] = true; out.push(id); }
+    });
+    return out;
+  }
+  function tagPickerHTML(){
+    var praise = "", flags = "";
+    TAGS.forEach(function(t){
+      var chip = '<button type="button" class="tag-chip' + (t.kind === "flag" ? " flag" : "") + '" data-tag="' + t.id + '" aria-pressed="false">' + esc(t.label) + "</button>";
+      if (t.kind === "praise") praise += chip; else flags += chip;
+    });
+    return '<div class="tag-picker"><p class="tp-label" id="tagPickerLabel">Quick tags <span class="hint">(optional)</span></p>' +
+      '<p class="tp-hint">Tap all that apply to your experience — they show on this landlord\u2019s page so other renters can spot patterns fast.</p>' +
+      '<p class="tag-group-label">Good signs</p><div class="tag-chips" role="group" aria-label="Positive qualities">' + praise + "</div>" +
+      '<p class="tag-group-label">Red flags</p><div class="tag-chips" role="group" aria-label="Red flags">' + flags + "</div></div>";
+  }
+  function tagSummaryHTML(id){
+    var revs = reviewsBy[id] || [];
+    var praiseCounts = {}, flagCounts = {}, praiseReviewers = 0, flagReviewers = 0;
+    revs.forEach(function(r){
+      var ids = parseTags(r.tags);
+      var hasPraise = false, hasFlag = false;
+      ids.forEach(function(tid){
+        var t = TAG_BY_ID[tid];
+        if (t.kind === "praise"){ praiseCounts[tid] = (praiseCounts[tid]||0) + 1; hasPraise = true; }
+        else { flagCounts[tid] = (flagCounts[tid]||0) + 1; hasFlag = true; }
+      });
+      if (hasPraise) praiseReviewers++;
+      if (hasFlag) flagReviewers++;
+    });
+    function pills(counts, kind){
+      var ids = Object.keys(counts).sort(function(a,b){
+        if (counts[b] !== counts[a]) return counts[b] - counts[a];
+        return TAG_BY_ID[a].label.localeCompare(TAG_BY_ID[b].label);
+      });
+      if (!ids.length) return "";
+      return '<span class="ts-pills">' + ids.map(function(tid){
+        return '<span class="ts-pill' + (kind === "flag" ? " flag" : "") + '">' + esc(TAG_BY_ID[tid].label) +
+          (counts[tid] > 1 ? ' <span class="n">\u00d7' + counts[tid] + "</span>" : "") + "</span>";
+      }).join("") + "</span>";
+    }
+    var praisePills = pills(praiseCounts, "praise");
+    var flagPills = pills(flagCounts, "flag");
+    if (!praisePills && !flagPills) return "";
+    var html = '<section class="tag-summary" aria-label="What reviewers noted"><h3>What reviewers noted</h3>';
+    if (praisePills){
+      html += '<p><span class="ts-label">Praised by ' + praiseReviewers + (praiseReviewers === 1 ? " reviewer" : " reviewers") + " for:</span>" + praisePills + "</p>";
+    }
+    if (flagPills){
+      html += '<p><span class="ts-label flag">Flagged by ' + flagReviewers + (flagReviewers === 1 ? " reviewer" : " reviewers") + ":</span>" + flagPills + "</p>";
+    }
+    return html + "</section>";
+  }
+  function reviewTagsHTML(r){
+    var ids = parseTags(r.tags);
+    if (!ids.length) return "";
+    return '<div class="r-tags">' + ids.map(function(tid){
+      var t = TAG_BY_ID[tid];
+      return '<span class="r-tag' + (t.kind === "flag" ? " flag" : "") + '">' + esc(t.label) + "</span>";
+    }).join("") + "</div>";
+  }
+
+  /* ================= Review media ================= */
+  function parseMedia(raw){
+    if (!raw) return [];
+    return String(raw).split(",").map(function(s){ return s.trim(); }).filter(function(s){ return !!s; });
+  }
+  function mediaKind(url){
+    var clean = "";
+    try { clean = decodeURIComponent(String(url)).split("?")[0].toLowerCase(); } catch(e){ clean = String(url).split("?")[0].toLowerCase(); }
+    if (/\.(mp4|webm|mov|m4v|ogv)$/.test(clean)) return "video";
+    if (/\.(mp3|wav|m4a|aac|ogg|oga|opus|flac)$/.test(clean)) return "audio";
+    if (/\.(jpe?g|png|gif|webp|bmp|avif|svg)$/.test(clean)) return "image";
+    var low = String(url).toLowerCase();
+    if (low.indexOf(".mp4") !== -1 || low.indexOf(".webm") !== -1 || low.indexOf(".mov") !== -1) return "video";
+    if (low.indexOf(".mp3") !== -1 || low.indexOf(".wav") !== -1 || low.indexOf(".m4a") !== -1 || low.indexOf(".aac") !== -1) return "audio";
+    return "image";
+  }
+  function reviewMediaHTML(r){
+    var urls = parseMedia(r && r.media);
+    if (!urls.length) return "";
+    var html = '<div class="r-media">';
+    urls.forEach(function(u){
+      var kind = mediaKind(u);
+      var eu = esc(u);
+      if (kind === "video"){
+        html += '<video controls preload="metadata" src="' + eu + '" class="r-media-video" aria-label="Video attached to this review"></video>';
+      } else if (kind === "audio"){
+        html += '<audio controls preload="metadata" src="' + eu + '" class="r-media-audio" aria-label="Audio attached to this review"></audio>';
+      } else {
+        html += '<a href="' + eu + '" target="_blank" rel="noopener" aria-label="Open photo full size"><img src="' + eu + '" alt="Photo attached to this review" loading="lazy" class="r-media-img" /></a>';
+      }
+    });
+    return html + "</div>";
+  }
+  function mediaPickerHTML(){
+    return '<div class="media-section"><p class="mp-label" id="mediaPickerLabel">Add photos, video, or audio <span class="hint">(optional)</span></p>' +
+      '<p class="mp-hint">Show what you mean \u2014 a repair that never got fixed, a walk-through, or a voice note about what happened. Photos: up to 4, 5 MB each. Video: 1 file, up to 50 MB. Audio: 1 file, up to 10 MB.</p>' +
+      '<div class="media-pickers">' +
+      '<div class="media-picker-row"><label class="btn secondary small media-btn" for="rvPhotos">Add photos</label>' +
+      '<input type="file" id="rvPhotos" accept="image/*" multiple hidden />' +
+      '<div id="photoPreview" class="photo-preview" aria-live="polite"></div></div>' +
+      '<div class="media-picker-row"><label class="btn secondary small media-btn" for="rvVideo">Add video</label>' +
+      '<input type="file" id="rvVideo" accept="video/*" hidden />' +
+      '<div id="videoPreview" class="file-preview" aria-live="polite"></div></div>' +
+      '<div class="media-picker-row"><label class="btn secondary small media-btn" for="rvAudio">Add audio / voice note</label>' +
+      '<input type="file" id="rvAudio" accept="audio/*" hidden />' +
+      '<div id="audioPreview" class="file-preview" aria-live="polite"></div></div>' +
+      '</div><p class="form-msg" id="mediaMsg" role="alert"></p></div>';
+  }
+  function fmtSize(bytes){
+    if (!bytes && bytes !== 0) return "";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  /* ================= State ================= */
+  var landlords = {};   // id -> {name, city, state, seed?}
+  var reviewsBy = {};   // id -> [review,...]
+  var db = null, dbOk = false, storage = null;
+  var currentId = null;
+  var searchTerm = "";
+  var sortMode = "rating";
+
+  Object.keys(SEEDS).forEach(function(id){
+    landlords[id] = SEEDS[id];
+    reviewsBy[id] = (SEED_REVIEWS[id] || []).slice();
+  });
+
+  /* ================= Helpers ================= */
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function initials(name){
+    var parts = String(name||"?").trim().split(/\s+/);
+    var a = parts[0] ? parts[0].charAt(0) : "?";
+    var b = parts.length > 1 ? parts[parts.length-1].charAt(0) : "";
+    return (a + b).toUpperCase();
+  }
+  function colorFor(name){
+    var h = 0; name = String(name||"");
+    for (var i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
+    return AVATAR_COLORS[h % AVATAR_COLORS.length];
+  }
+  function starsHTML(avg, count){
+    var full = Math.round(avg);
+    var out = "";
+    for (var i=1;i<=5;i++) out += i <= full ? "★" : '<span class="off">★</span>';
+    return '<span class="stars" role="img" aria-label="' + (count ? avg.toFixed(1) + " out of 5 stars" : "No ratings yet") + '">' + out + "</span>";
+  }
+  /* ================= Rental details & maps ================= */
+  function fmtRent(n){
+    n = +n;
+    if (!isFinite(n) || n <= 0) return "";
+    return "$" + Math.round(n).toLocaleString("en-US") + "/mo";
+  }
+  function validCoords(lat, lng){
+    lat = +lat; lng = +lng;
+    return isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat !== 0 || lng !== 0);
+  }
+  function hasCoords(L){ return !!(L && validCoords(L.lat, L.lng)); }
+  function rentalLineHTML(L){
+    var bits = [];
+    if (L.rentalStyle) bits.push('<span class="rental-chip">' + esc(L.rentalStyle) + "</span>");
+    var rent = fmtRent(L.rentAmount);
+    if (rent) bits.push('<span class="rental-rent">' + rent + "</span>");
+    if (!bits.length) return "";
+    return '<div class="rental-line">' + bits.join("") + "</div>";
+  }
+  function osmTiles(map){
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  }
+  function geocode(query){
+    if (!query) return Promise.resolve(null);
+    var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" + encodeURIComponent(query);
+    return fetch(url, { headers: { "Accept": "application/json" } })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(arr){
+        if (arr && arr.length && validCoords(arr[0].lat, arr[0].lon)){
+          return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon) };
+        }
+        return null;
+      })
+      .catch(function(){ return null; });
+  }
+
+  var homeMap = null, homeMarkers = null, homePinSig = "";
+  function updateHomeMap(){
+    var section = $("mapSection");
+    var ids = Object.keys(landlords).filter(function(id){ return hasCoords(landlords[id]); });
+    if (!ids.length){ if (section) section.classList.add("hidden"); return; }
+    if (section) section.classList.remove("hidden");
+    var note = $("mapNote");
+    if (typeof L === "undefined"){
+      if (note){ note.textContent = "The map couldn't load — the listings below still work."; note.classList.add("show"); }
+      return;
+    }
+    if (note){ note.textContent = ""; note.classList.remove("show"); }
+    if (!homeMap){
+      homeMap = L.map("homeMap").setView([39.5, -98.35], 4);
+      osmTiles(homeMap);
+      homeMarkers = L.layerGroup().addTo(homeMap);
+    }
+    homeMarkers.clearLayers();
+    var bounds = [];
+    ids.forEach(function(id){
+      var Ld = landlords[id];
+      var marker = L.marker([+Ld.lat, +Ld.lng]).addTo(homeMarkers);
+      var meta = [Ld.rentalStyle, fmtRent(Ld.rentAmount)].filter(Boolean).join(" · ");
+      var locLine = esc(Ld.city) + ", " + esc(Ld.state);
+      marker.bindPopup('<div class="map-pop"><b>' + esc(Ld.name) + '</b><div class="mp-meta">' +
+        (meta ? esc(meta) + "<br />" : "") + locLine + '</div>' +
+        '<button type="button" class="btn" data-open-landlord="' + esc(id) + '">View reviews</button></div>');
+      bounds.push([+Ld.lat, +Ld.lng]);
+    });
+    var sig = ids.slice().sort().join(",");
+    if (sig !== homePinSig){
+      homePinSig = sig;
+      if (bounds.length === 1) homeMap.setView(bounds[0], 12);
+      else homeMap.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
+    }
+    setTimeout(function(){ if (homeMap) homeMap.invalidateSize(); }, 60);
+  }
+
+  var detailMap = null;
+  function initDetailMap(landlord){
+    var el = $("detailMap");
+    if (detailMap){ detailMap.remove(); detailMap = null; }
+    if (!el || typeof L === "undefined" || !hasCoords(landlord)) return;
+    detailMap = L.map(el).setView([+landlord.lat, +landlord.lng], 14);
+    osmTiles(detailMap);
+    L.marker([+landlord.lat, +landlord.lng]).addTo(detailMap)
+      .bindPopup("<b>" + esc(landlord.name) + "</b><br />" + esc(landlord.address || (landlord.city + ", " + landlord.state)));
+    setTimeout(function(){ if (detailMap) detailMap.invalidateSize(); }, 60);
+  }
+  document.addEventListener("click", function(ev){
+    var t = ev.target && ev.target.closest ? ev.target.closest("[data-open-landlord]") : null;
+    if (t) openDetail(t.getAttribute("data-open-landlord"));
+  });
+
+  function fmtDate(dstr){
+    var d = new Date(dstr + "T12:00:00");
+    if (isNaN(d.getTime())) return esc(dstr);
+    return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+  }
+  function statsFor(id){
+    var revs = reviewsBy[id] || [];
+    var s = { count: revs.length, overall:0, responsiveness:0, maintenance:0, fairness:0, communication:0 };
+    if (!revs.length) return s;
+    revs.forEach(function(r){
+      s.overall += +r.overall||0; s.responsiveness += +r.responsiveness||0;
+      s.maintenance += +r.maintenance||0; s.fairness += +r.fairness||0; s.communication += +r.communication||0;
+    });
+    ["overall","responsiveness","maintenance","fairness","communication"].forEach(function(k){ s[k] = s[k]/revs.length; });
+    return s;
+  }
+  function sortedIds(){
+    var ids = Object.keys(landlords).filter(function(id){
+      if (!searchTerm) return true;
+      var L = landlords[id];
+      var hay = (L.name + " " + L.city + " " + L.state).toLowerCase();
+      return hay.indexOf(searchTerm) !== -1;
+    });
+    ids.sort(function(a,b){
+      var sa = statsFor(a), sb = statsFor(b);
+      if (sortMode === "name") return landlords[a].name.localeCompare(landlords[b].name);
+      if (sortMode === "reviews"){
+        if (sb.count !== sa.count) return sb.count - sa.count;
+        return sb.overall - sa.overall;
+      }
+      // rating: rated first, highest first, then most reviews
+      if ((sa.count>0) !== (sb.count>0)) return sa.count>0 ? -1 : 1;
+      if (sb.overall !== sa.overall) return sb.overall - sa.overall;
+      return sb.count - sa.count;
+    });
+    return ids;
+  }
+
+  /* ================= List rendering ================= */
+  function renderStats(){
+    var totalReviews = 0, sum = 0, rated = 0;
+    Object.keys(landlords).forEach(function(id){
+      var s = statsFor(id);
+      totalReviews += s.count;
+      if (s.count){ sum += s.overall * s.count; rated += s.count; }
+    });
+    var avg = rated ? (sum/rated).toFixed(1) : "—";
+    $("statsBar").innerHTML =
+      "<div><strong>" + Object.keys(landlords).length + "</strong>landlords listed</div>" +
+      "<div><strong>" + totalReviews + "</strong>renter reviews</div>" +
+      "<div><strong>" + avg + "</strong>average rating</div>";
+  }
+
+  function renderList(){
+    renderStats();
+    updateHomeMap();
+    var ids = sortedIds();
+    var area = $("listArea");
+    $("listHeading").textContent = searchTerm ? "Results for “" + searchTerm + "”" : "Landlords";
+    if (!ids.length){
+      area.innerHTML = '<div class="empty"><h3>No landlords found</h3>' +
+        "<p>No one matches that search yet. Check the spelling, try just a city or state — or add the landlord yourself.</p>" +
+        '<button class="btn" type="button" id="emptyAddBtn">+ Add this landlord</button></div>';
+      var b = $("emptyAddBtn");
+      if (b) b.addEventListener("click", openAddPanel);
+      return;
+    }
+    var html = '<div class="grid">';
+    ids.forEach(function(id){
+      var L = landlords[id], s = statsFor(id);
+      var revs = reviewsBy[id] || [];
+      var latest = revs.length ? revs.slice().sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); })[0] : null;
+      html += '<article class="card">' +
+        '<div class="card-top"><div class="avatar" style="background:' + colorFor(L.name) + '" aria-hidden="true">' + esc(initials(L.name)) + '</div>' +
+        '<div><h3>' + esc(L.name) + '</h3><div class="loc">' + esc(L.city) + ", " + esc(L.state) + "</div>" +
+        (L.seed ? '<span class="badge">Sample listing</span>' : "") + "</div></div>" +
+        rentalLineHTML(L);
+      if (s.count){
+        html += '<div class="rating-row"><span class="rating-num">' + s.overall.toFixed(1) + "</span>" + starsHTML(s.overall, s.count) +
+          '<span class="rev-count">' + s.count + (s.count===1 ? " review" : " reviews") + "</span></div>" +
+          '<div class="mini-cats">' +
+          '<span class="mc">Responsive <b>' + s.responsiveness.toFixed(1) + "</b></span>" +
+          '<span class="mc">Maintenance <b>' + s.maintenance.toFixed(1) + "</b></span>" +
+          '<span class="mc">Fairness <b>' + s.fairness.toFixed(1) + "</b></span>" +
+          '<span class="mc">Communication <b>' + s.communication.toFixed(1) + "</b></span></div>";
+        if (latest) html += '<p class="snippet">' + esc(latest.text) + "</p>";
+      } else {
+        html += '<p class="no-reviews">No reviews yet — be the first to share your experience.</p>';
+      }
+      html += '<button class="btn small" type="button" data-view="' + esc(id) + '">' + (s.count ? "Read reviews" : "Write the first review") + "</button></article>";
+    });
+    html += "</div>";
+    area.innerHTML = html;
+    area.querySelectorAll("[data-view]").forEach(function(btn){
+      btn.addEventListener("click", function(){ openDetail(btn.getAttribute("data-view")); });
+    });
+  }
+
+  /* ================= Detail rendering ================= */
+  function catBar(label, val){
+    var pct = val ? Math.round(val/5*100) : 0;
+    return '<div class="cat-bar"><span>' + label + '</span><span class="track"><span class="fill" style="display:block;width:' + pct + '%"></span></span><span class="v">' + (val ? val.toFixed(1) : "—") + "</span></div>";
+  }
+
+  function starInputHTML(key, label){
+    var out = '<div class="rate-row"><span class="rl" id="lbl-' + key + '">' + label + '</span><span class="star-input" role="radiogroup" aria-labelledby="lbl-' + key + '" data-key="' + key + '">';
+    for (var i=1;i<=5;i++){
+      out += '<button type="button" role="radio" aria-checked="false" aria-label="' + i + ' star' + (i>1?"s":"") + '" data-val="' + i + '">★</button>';
+    }
+    return out + "</span></div>";
+  }
+
+  function openDetail(id){
+    currentId = id;
+    $("listView").classList.add("hidden");
+    $("detailView").classList.remove("hidden");
+    renderDetail();
+    window.scrollTo(0,0);
+  }
+  function closeDetail(){
+    currentId = null;
+    $("detailView").classList.add("hidden");
+    $("listView").classList.remove("hidden");
+    renderList();
+    window.scrollTo(0,0);
+  }
+
+  var draftRatings = { overall:0, responsiveness:0, maintenance:0, fairness:0, communication:0 };
+  var draftTags = {};
+  var draftMedia = { photos: [], video: null, audio: null };
+
+  function renderDetail(){
+    var id = currentId, L = landlords[id];
+    if (!L){ closeDetail(); return; }
+    var s = statsFor(id);
+    var revs = (reviewsBy[id] || []).slice().sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+    var html = "";
+    html += '<div class="detail-head"><div class="avatar" style="background:' + colorFor(L.name) + '" aria-hidden="true">' + esc(initials(L.name)) + "</div>" +
+      "<div><h2>" + esc(L.name) + '</h2><div class="loc">' + esc(L.city) + ", " + esc(L.state) + "</div>" +
+      (L.address ? '<div class="addr-line">' + esc(L.address) + "</div>" : "") +
+      rentalLineHTML(L) +
+      (L.seed ? '<span class="badge">Sample listing</span>' : "") + "</div></div>";
+
+    html += '<div class="score-block"><div class="big-score"><span class="n">' + (s.count ? s.overall.toFixed(1) : "—") + "</span>" +
+      starsHTML(s.overall, s.count) +
+      '<span class="rev-count">' + (s.count ? s.count + (s.count===1?" review":" reviews") : "No reviews yet") + "</span></div>" +
+      '<div class="cat-bars">' +
+      catBar("Responsiveness", s.responsiveness) + catBar("Maintenance", s.maintenance) +
+      catBar("Fairness", s.fairness) + catBar("Communication", s.communication) +
+      "</div></div>";
+
+    if (hasCoords(L)) html += '<div class="map-box small" id="detailMap" role="application" aria-label="Map of this rental"></div>';
+
+    html += tagSummaryHTML(id);
+
+    html += '<button class="btn" type="button" id="writeToggle">Write a review</button>';
+
+    /* Review form */
+    html += '<section class="panel hidden" id="reviewPanel" aria-labelledby="reviewPanelTitle"><h3 id="reviewPanelTitle">Review ' + esc(L.name) + "</h3>" +
+      '<div class="honest"><b>Keep it honest.</b> Stick to facts about your own experience — what happened, when, and how it was handled. Don\'t post phone numbers, email addresses, or home addresses (yours or anyone else\'s).</div>' +
+      '<form id="reviewForm" novalidate>' +
+      starInputHTML("overall","Overall rating *") +
+      starInputHTML("responsiveness","Responsiveness") +
+      starInputHTML("maintenance","Maintenance &amp; repairs") +
+      starInputHTML("fairness","Fairness (rent, deposit, fees)") +
+      starInputHTML("communication","Communication") +
+      tagPickerHTML() +
+      '<div class="form-grid" style="margin-top:16px">' +
+      '<div><label class="fl" for="rvName">Your display name * <span class="hint">(max 20 characters — a first name and last initial is plenty)</span></label>' +
+      '<input class="textin" id="rvName" maxlength="20" placeholder="e.g. Alex M." required /></div>' +
+      '<div><label class="fl" for="rvType">Property type</label>' +
+      '<select class="textin" id="rvType"><option>Apartment</option><option>House</option><option>Duplex</option><option>Townhouse</option><option>Condo</option><option>Room / Shared</option></select></div>' +
+      '<div class="full"><label class="fl" for="rvTitle">Review headline * <span class="hint">(max 80 characters)</span></label>' +
+      '<input class="textin" id="rvTitle" maxlength="80" placeholder="Sum it up in a line" required /></div>' +
+      '<div class="full"><label class="fl" for="rvText">Your review * <span class="hint">(max 1,000 characters)</span></label>' +
+      '<textarea class="textin" id="rvText" maxlength="1000" placeholder="How were repairs handled? Was the deposit fair? Would you rent from them again?" required></textarea></div>' +
+      "</div>" +
+      mediaPickerHTML() +
+      '<div class="form-actions"><button class="btn" type="submit" id="rvSubmit">Post review</button>' +
+      '<button class="btn secondary" type="button" id="rvCancel">Cancel</button></div>' +
+      '<p class="form-msg" id="rvMsg" role="alert"></p></form></section>';
+
+    html += '<h3 class="section-title">Reviews</h3>';
+    if (!revs.length){
+      html += '<p style="color:var(--ink-3)">No reviews yet for this landlord. Yours could be the first.</p>';
+    } else {
+      revs.forEach(function(r){
+        html += '<article class="review"><div class="r-head"><span class="r-name">' + esc(r.reviewerName) + "</span>" +
+          starsHTML(+r.overall||0, 1) +
+          '<span class="r-meta">' + esc(r.propertyType || "") + (r.propertyType ? " · " : "") + fmtDate(r.date) + "</span></div>" +
+          "<h4>" + esc(r.title) + "</h4><p>" + esc(r.text) + "</p>" +
+          reviewMediaHTML(r) +
+          reviewTagsHTML(r) +
+          '<div class="r-cats"><span>Responsive <b>' + (+r.responsiveness||0) + '/5</b></span><span>Maintenance <b>' + (+r.maintenance||0) + '/5</b></span><span>Fairness <b>' + (+r.fairness||0) + '/5</b></span><span>Communication <b>' + (+r.communication||0) + "/5</b></span></div></article>";
+      });
+    }
+    $("detailArea").innerHTML = html;
+    initDetailMap(L);
+
+    /* Wire form */
+    draftRatings = { overall:0, responsiveness:0, maintenance:0, fairness:0, communication:0 };
+    draftTags = {};
+    draftMedia = { photos: [], video: null, audio: null };
+    $("writeToggle").addEventListener("click", function(){
+      $("reviewPanel").classList.toggle("hidden");
+      if (!$("reviewPanel").classList.contains("hidden")) $("reviewPanel").scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+    $("rvCancel").addEventListener("click", function(){ $("reviewPanel").classList.add("hidden"); });
+    document.querySelectorAll(".star-input").forEach(function(group){
+      var key = group.getAttribute("data-key");
+      group.querySelectorAll("button").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var v = parseInt(btn.getAttribute("data-val"), 10);
+          draftRatings[key] = (key !== "overall" && draftRatings[key] === v) ? 0 : v;
+          paintStars(group, draftRatings[key]);
+        });
+      });
+    });
+    document.querySelectorAll(".tag-chip").forEach(function(chip){
+      chip.addEventListener("click", function(){
+        var tid = chip.getAttribute("data-tag");
+        if (draftTags[tid]){ delete draftTags[tid]; chip.setAttribute("aria-pressed","false"); }
+        else { draftTags[tid] = true; chip.setAttribute("aria-pressed","true"); }
+      });
+    });
+    /* Media pickers */
+    function showMediaMsg(text){
+      var el = $("mediaMsg");
+      if (!el) return;
+      if (!text){ el.textContent = ""; el.className = "form-msg"; return; }
+      el.textContent = text; el.className = "form-msg show err";
+    }
+    function renderPhotoPreview(){
+      var wrap = $("photoPreview");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      draftMedia.photos.forEach(function(file, idx){
+        var div = document.createElement("div");
+        div.className = "thumb-wrap";
+        var img = document.createElement("img");
+        try { img.src = URL.createObjectURL(file); } catch(e){}
+        img.alt = file.name || "Selected photo";
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "thumb-remove"; btn.textContent = "\u00d7";
+        btn.setAttribute("aria-label", "Remove photo " + (file.name || ""));
+        btn.addEventListener("click", function(){
+          draftMedia.photos.splice(idx, 1);
+          renderPhotoPreview();
+          showMediaMsg("");
+        });
+        div.appendChild(img); div.appendChild(btn);
+        wrap.appendChild(div);
+      });
+    }
+    function renderSinglePreview(containerId, file, onRemove){
+      var wrap = $(containerId);
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      if (!file) return;
+      var chip = document.createElement("span");
+      chip.className = "file-chip";
+      var nameSpan = document.createElement("span");
+      nameSpan.className = "fname"; nameSpan.textContent = file.name || "Selected file";
+      var sizeSpan = document.createElement("span");
+      sizeSpan.className = "fsize"; sizeSpan.textContent = fmtSize(file.size);
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "file-remove"; btn.textContent = "\u00d7";
+      btn.setAttribute("aria-label", "Remove " + (file.name || "file"));
+      btn.addEventListener("click", function(){ onRemove(); showMediaMsg(""); });
+      chip.appendChild(nameSpan); chip.appendChild(sizeSpan); chip.appendChild(btn);
+      wrap.appendChild(chip);
+    }
+    function renderVideoPreview(){ renderSinglePreview("videoPreview", draftMedia.video, function(){ draftMedia.video = null; var inp = $("rvVideo"); if (inp) inp.value = ""; renderVideoPreview(); }); }
+    function renderAudioPreview(){ renderSinglePreview("audioPreview", draftMedia.audio, function(){ draftMedia.audio = null; var inp = $("rvAudio"); if (inp) inp.value = ""; renderAudioPreview(); }); }
+    var photosInput = $("rvPhotos"), videoInput = $("rvVideo"), audioInput = $("rvAudio");
+    if (photosInput) photosInput.addEventListener("change", function(){
+      var files = Array.prototype.slice.call(photosInput.files || []);
+      var err = "";
+      files.forEach(function(f){
+        if (draftMedia.photos.length >= 4){ err = "You can add up to 4 photos."; return; }
+        if (f.size > 5 * 1024 * 1024){ err = "\u201c" + f.name + "\u201d is over 5 MB \u2014 photos must be 5 MB or smaller."; return; }
+        if (f.type && f.type.indexOf("image/") !== 0){ err = "\u201c" + f.name + "\u201d isn\u2019t an image file."; return; }
+        draftMedia.photos.push(f);
+      });
+      photosInput.value = "";
+      renderPhotoPreview();
+      showMediaMsg(err);
+    });
+    if (videoInput) videoInput.addEventListener("change", function(){
+      var f = videoInput.files && videoInput.files[0];
+      if (!f) return;
+      if (f.size > 50 * 1024 * 1024){ showMediaMsg("\u201c" + f.name + "\u201d is over 50 MB \u2014 video must be 50 MB or smaller."); videoInput.value = ""; return; }
+      draftMedia.video = f;
+      renderVideoPreview();
+      showMediaMsg("");
+    });
+    if (audioInput) audioInput.addEventListener("change", function(){
+      var f = audioInput.files && audioInput.files[0];
+      if (!f) return;
+      if (f.size > 10 * 1024 * 1024){ showMediaMsg("\u201c" + f.name + "\u201d is over 10 MB \u2014 audio must be 10 MB or smaller."); audioInput.value = ""; return; }
+      draftMedia.audio = f;
+      renderAudioPreview();
+      showMediaMsg("");
+    });
+    $("reviewForm").addEventListener("submit", submitReview);
+  }
+  function paintStars(group, v){
+    group.querySelectorAll("button").forEach(function(b){
+      var bv = parseInt(b.getAttribute("data-val"), 10);
+      b.classList.toggle("on", bv <= v);
+      b.setAttribute("aria-checked", bv === v ? "true" : "false");
+    });
+  }
+
+  /* ================= Firebase ================= */
+  var syncNote = $("syncNote");
+  function setSyncNote(msg){ syncNote.textContent = msg || ""; syncNote.classList.toggle("show", !!msg); }
+
+  function initFirebase(){
+    try {
+      if (typeof firebase === "undefined") throw new Error("sdk");
+      firebase.initializeApp({
+        apiKey: "AIzaSyBpROM-Jk6p3QbvF8casWHiGn-W6uuMqG4",
+        authDomain: "jos-apps-scores.firebaseapp.com",
+        databaseURL: "https://jos-apps-scores-default-rtdb.firebaseio.com",
+        projectId: "jos-apps-scores",
+        storageBucket: "jos-apps-scores.firebasestorage.app",
+        messagingSenderId: "208768682069",
+        appId: "1:208768682069:web:87c29118a29114929d6cdc"
+      });
+      db = firebase.database();
+      try { storage = firebase.storage(); } catch(e2) { storage = null; }
+      dbOk = true;
+    } catch(e) {
+      dbOk = false;
+      setSyncNote("Live reviews couldn't be reached right now — showing the sample listings. New reviews can be posted once the connection is back.");
+      return;
+    }
+
+    db.ref("landlords").on("value", function(snap){
+      var data = snap.val() || {};
+      Object.keys(data).forEach(function(id){
+        var d = data[id] || {};
+        if (d.name && d.city && d.state){
+          var rec = { name:String(d.name), city:String(d.city), state:String(d.state) };
+          if (d.rentalStyle) rec.rentalStyle = String(d.rentalStyle).slice(0,50);
+          var rent = +d.rentAmount;
+          if (isFinite(rent) && rent > 0) rec.rentAmount = rent;
+          if (d.address) rec.address = String(d.address).slice(0,200);
+          if (validCoords(d.lat, d.lng)){ rec.lat = +d.lat; rec.lng = +d.lng; }
+          landlords[id] = rec;
+        }
+      });
+      if (currentId) renderDetail(); else renderList();
+    }, function(){
+      setSyncNote("Live reviews couldn't be reached right now — showing the sample listings.");
+    });
+
+    db.ref("landlordReviews").on("value", function(snap){
+      var data = snap.val() || {};
+      // rebuild: seeds first, then live reviews merged in
+      Object.keys(SEEDS).forEach(function(id){ reviewsBy[id] = (SEED_REVIEWS[id]||[]).slice(); });
+      Object.keys(landlords).forEach(function(id){ if (!reviewsBy[id]) reviewsBy[id] = []; });
+      Object.keys(data).forEach(function(lid){
+        var bucket = data[lid] || {};
+        if (!reviewsBy[lid]) reviewsBy[lid] = [];
+        Object.keys(bucket).forEach(function(rid){
+          var r = bucket[rid] || {};
+          if (r.reviewerName && r.title && r.text) reviewsBy[lid].push({
+            reviewerName:String(r.reviewerName), overall:+r.overall||0,
+            responsiveness:+r.responsiveness||0, maintenance:+r.maintenance||0,
+            fairness:+r.fairness||0, communication:+r.communication||0,
+            title:String(r.title), text:String(r.text),
+            propertyType:String(r.propertyType||""), date:String(r.date||""),
+            tags:String(r.tags||"").slice(0,200),
+            media:String(r.media||"").slice(0,2000)
+          });
+        });
+      });
+      setSyncNote("");
+      if (currentId) renderDetail(); else renderList();
+    }, function(){
+      setSyncNote("Live reviews couldn't be reached right now — showing the sample listings.");
+    });
+  }
+
+  /* ================= Add landlord ================= */
+  function openAddPanel(){
+    $("addPanel").classList.remove("hidden");
+    $("addPanel").scrollIntoView({ behavior:"smooth", block:"start" });
+    $("addName").focus();
+  }
+  $("addLandlordBtn").addEventListener("click", openAddPanel);
+  $("addCancel").addEventListener("click", function(){ $("addPanel").classList.add("hidden"); });
+
+  function showMsg(el, msg, ok){
+    el.textContent = msg; el.className = "form-msg show " + (ok ? "ok" : "err");
+  }
+
+  $("addForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = $("addName").value.trim();
+    var city = $("addCity").value.trim();
+    var state = $("addState").value.trim().toUpperCase();
+    var rentalStyle = $("addStyle").value;
+    var rentRaw = $("addRent").value.trim();
+    var address = $("addAddress").value.trim().slice(0,200);
+    var msg = $("addMsg");
+    if (!name || !city || !state){ showMsg(msg, "Please fill in the landlord's name, city, and state.", false); return; }
+    if (!/^[A-Z]{2}$/.test(state)){ showMsg(msg, "State should be the 2-letter code, like OH or TX.", false); return; }
+    var rentAmount = null;
+    if (rentRaw){
+      rentAmount = Number(rentRaw);
+      if (!isFinite(rentAmount) || rentAmount <= 0){ showMsg(msg, "Monthly rent should be a dollar amount above 0 — or leave it blank.", false); return; }
+      rentAmount = Math.round(rentAmount);
+    }
+    // duplicate check (case-insensitive)
+    var dup = Object.keys(landlords).some(function(id){
+      var L = landlords[id];
+      return L.name.toLowerCase() === name.toLowerCase() && L.city.toLowerCase() === city.toLowerCase() && L.state.toUpperCase() === state;
+    });
+    if (dup){ showMsg(msg, "That landlord is already listed for " + city + ", " + state + " — search for them above.", false); return; }
+    if (!dbOk || !db){ showMsg(msg, "Couldn't save right now — the review database isn't reachable. Please try again in a bit.", false); return; }
+    var btn = $("addSubmit");
+    btn.disabled = true;
+    btn.textContent = "Finding location…";
+    showMsg(msg, "Looking up the location for the map…", true);
+    var record = { name:name, city:city, state:state, rentalStyle:String(rentalStyle).slice(0,50), createdAt:Date.now() };
+    if (rentAmount) record.rentAmount = rentAmount;
+    if (address) record.address = address;
+    // Geocode the address (fall back to city + state) so the rental lands on the map.
+    // If geocoding fails, the landlord is still saved — just without a pin.
+    geocode(address || (city + ", " + state))
+      .then(function(coords){
+        if (coords) return coords;
+        if (address) return geocode(city + ", " + state);
+        return null;
+      })
+      .then(function(coords){
+        if (coords){ record.lat = coords.lat; record.lng = coords.lng; }
+        return db.ref("landlords").push(record);
+      })
+      .then(function(ref){
+        btn.disabled = false;
+        btn.textContent = "Add landlord";
+        msg.className = "form-msg"; msg.textContent = "";
+        $("addForm").reset();
+        $("addPanel").classList.add("hidden");
+        openDetail(ref.key);
+      })
+      .catch(function(){
+        btn.disabled = false;
+        btn.textContent = "Add landlord";
+        showMsg(msg, "Couldn't save right now — the review database isn't accepting new listings yet. Please try again later.", false);
+      });
+  });
+
+  /* ================= Submit review ================= */
+  function uploadOneMedia(file, landlordId, reviewId){
+    if (!storage) return Promise.reject(new Error("storage-unavailable"));
+    var safeName = String(file.name || "file").replace(/[^\w.\-]+/g, "_");
+    if (!safeName) safeName = "file";
+    var ref = storage.ref("review-media/" + landlordId + "/" + reviewId + "/" + safeName);
+    return ref.put(file).then(function(){ return ref.getDownloadURL(); });
+  }
+  function submitReview(ev){
+    ev.preventDefault();
+    var msg = $("rvMsg");
+    var name = $("rvName").value.trim().slice(0,20);
+    var title = $("rvTitle").value.trim().slice(0,80);
+    var text = $("rvText").value.trim().slice(0,1000);
+    var type = $("rvType").value;
+    if (!draftRatings.overall){ showMsg(msg, "Please tap the stars to give an overall rating.", false); return; }
+    if (!name || !title || !text){ showMsg(msg, "Please add your display name, a headline, and your review.", false); return; }
+    // fall back unrated categories to overall
+    var today = new Date();
+    var pad = function(n){ return (n<10?"0":"")+n; };
+    var review = {
+      reviewerName: name,
+      overall: draftRatings.overall,
+      responsiveness: draftRatings.responsiveness || draftRatings.overall,
+      maintenance: draftRatings.maintenance || draftRatings.overall,
+      fairness: draftRatings.fairness || draftRatings.overall,
+      communication: draftRatings.communication || draftRatings.overall,
+      title: title, text: text, propertyType: type,
+      date: today.getFullYear() + "-" + pad(today.getMonth()+1) + "-" + pad(today.getDate())
+    };
+    var selectedTags = TAGS.filter(function(t){ return draftTags[t.id]; }).map(function(t){ return t.id; }).join(",").slice(0,200);
+    if (selectedTags) review.tags = selectedTags;
+    if (!dbOk || !db){ showMsg(msg, "Couldn't post right now — the review database isn't reachable. Please try again in a bit.", false); return; }
+
+    var mediaFiles = [];
+    (draftMedia.photos || []).forEach(function(f){ mediaFiles.push(f); });
+    if (draftMedia.video) mediaFiles.push(draftMedia.video);
+    if (draftMedia.audio) mediaFiles.push(draftMedia.audio);
+
+    var submitBtn = $("rvSubmit");
+    function resetBtn(label){
+      if (submitBtn){ submitBtn.disabled = false; if (label) submitBtn.textContent = label; }
+    }
+
+    if (!mediaFiles.length){
+      submitBtn.disabled = true;
+      db.ref("landlordReviews/" + currentId).push(review)
+        .then(function(){
+          resetBtn();
+          setTimeout(function(){ if (currentId) renderDetail(); }, 400);
+        })
+        .catch(function(){
+          resetBtn();
+          showMsg(msg, "Couldn't post right now — the review database isn't accepting new reviews yet. Please try again later.", false);
+        });
+      return;
+    }
+
+    if (!storage){
+      showMsg(msg, "Couldn't upload your media — file storage isn't reachable right now, so your review wasn't posted. Please try again in a bit.", false);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Uploading media\u2026";
+    showMsg(msg, "Uploading your media\u2026", true);
+
+    var newRef = db.ref("landlordReviews/" + currentId).push();
+    var reviewId = newRef.key;
+    var landlordId = currentId;
+
+    Promise.all(mediaFiles.map(function(f){ return uploadOneMedia(f, landlordId, reviewId); }))
+      .then(function(urls){
+        var mediaStr = urls.join(",").slice(0,2000);
+        if (mediaStr) review.media = mediaStr;
+        submitBtn.textContent = "Posting review\u2026";
+        return newRef.set(review);
+      })
+      .then(function(){
+        resetBtn("Post review");
+        setTimeout(function(){ if (currentId) renderDetail(); }, 400);
+      })
+      .catch(function(){
+        resetBtn("Post review");
+        showMsg(msg, "Your media couldn't be uploaded, so your review wasn't posted. Check your connection and try again.", false);
+      });
+  }
+
+  /* ================= Search & sort ================= */
+  $("searchForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    searchTerm = $("searchInput").value.trim().toLowerCase();
+    renderList();
+  });
+  $("searchInput").addEventListener("input", function(){
+    searchTerm = $("searchInput").value.trim().toLowerCase();
+    renderList();
+  });
+  $("sortSel").addEventListener("change", function(){ sortMode = $("sortSel").value; renderList(); });
+  $("backBtn").addEventListener("click", closeDetail);
+
+  /* ================= Go ================= */
+  renderList();
+  initFirebase();
+})();
+</script>
+</body>
+</html>
