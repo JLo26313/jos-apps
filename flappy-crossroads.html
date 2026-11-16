@@ -780,6 +780,8 @@
                          fc_frog_claimed / fc_frog_left (FROG26, 30 min of play left)
                          fc_bee_claimed / fc_bee_left   (BEE26, 30 min of play left)
                          fc_ghost_claimed / fc_ghost_left (GHOST26, 30 min of play left)
+                         fc_flappy_claimed / fc_flappy_left (FLAPPY26, 30 min of play left,
+                         full unlock: colors, all 4 packs AND all 8 backgrounds)
            promo master: fc_every_unlocked (EVERY2026, permanent, separate from paid;
                          covers colors, all 4 packs AND all 8 backgrounds)
            paid bgs    : fc_bg1 .. fc_bg8 (Stripe ?bgN=success, permanent)
@@ -867,6 +869,7 @@
       var frogPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var beePromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var ghostPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      var flappyPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       // Backgrounds: paid flags, promo trials (30 min of play each), selection.
       var bgPaid = [false, false, false, false, false, false, false, false, false];
       var justBoughtBg = 0;
@@ -903,6 +906,7 @@
         savePromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
         savePromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
         savePromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+        savePromo(flappyPromo, 'fc_flappy_claimed', 'fc_flappy_left');
         for(var bs = 1; bs <= 8; bs++) savePromo(bgPromos[bs], 'fc_bg' + bs + '_claimed', 'fc_bg' + bs + '_left');
       }
 
@@ -915,6 +919,7 @@
       loadPromo(frogPromo, 'fc_frog_claimed', 'fc_frog_left');
       loadPromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
       loadPromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
+      loadPromo(flappyPromo, 'fc_flappy_claimed', 'fc_flappy_left');
       for(var bl = 1; bl <= 8; bl++){
         bgPaid[bl] = lsGet('fc_bg' + bl) === '1';
         loadPromo(bgPromos[bl], 'fc_bg' + bl + '_claimed', 'fc_bg' + bl + '_left');
@@ -933,9 +938,9 @@
       try{ var lsChars = JSON.parse(lsGet('fc_level_chars') || '[]'); if(lsChars && lsChars.length) levelChars = lsChars; }catch(e){}
 
       /* ----- access checks (paid OR live promo trial) ----- */
-      function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending; }
+      function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending || flappyPromo.active || flappyPromo.pending; }
       function packOn(n){
-        if(packPaid[n] || everyUnlocked) return true;
+        if(packPaid[n] || everyUnlocked || flappyPromo.active || flappyPromo.pending) return true;
         if(n === 1) return !!(getPromo.active || getPromo.pending);
         if(n === 2) return !!(frogPromo.active || frogPromo.pending);
         if(n === 3) return !!(beePromo.active || beePromo.pending);
@@ -949,7 +954,7 @@
       function charOn(id){ var d = charDef(id); if(!d) return false; if(levelChars.indexOf(id) >= 0) return true; return packOn(d.pack); }
       function bgOn(n){
         if(n === 0) return true;
-        return !!(everyUnlocked || bgPaid[n] || bgPromos[n].active || bgPromos[n].pending);
+        return !!(everyUnlocked || flappyPromo.active || flappyPromo.pending || bgPaid[n] || bgPromos[n].active || bgPromos[n].pending);
       }
       /* A level is playable when the level before it was cleared (campaign),
          or when its background is owned / on a promo trial (paid & codes
@@ -1035,6 +1040,7 @@
         if(frogPromo.active && !frogPromo.pending) parts.push('FROG26 free time left: ' + fmtLeft(frogPromo.left) + ' of play');
         if(beePromo.active && !beePromo.pending) parts.push('BEE26 free time left: ' + fmtLeft(beePromo.left) + ' of play');
         if(ghostPromo.active && !ghostPromo.pending) parts.push('GHOST26 free time left: ' + fmtLeft(ghostPromo.left) + ' of play');
+        if(flappyPromo.active && !flappyPromo.pending) parts.push('FLAPPY26 free time left: ' + fmtLeft(flappyPromo.left) + ' of play');
         for(var bp = 1; bp <= 8; bp++){
           if(bgPromos[bp].active && !bgPromos[bp].pending) parts.push(BGS[bp].code + ' free time left: ' + fmtLeft(bgPromos[bp].left) + ' of play');
         }
@@ -1428,6 +1434,17 @@
                   claimPromo(ghostPromo, show, 'Free time started! Robot & Ghost unlocked for 30 minutes of play time.');
                   if(input) input.value = '';
                 }
+              } else if(code === 'FLAPPY26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(flappyPromo.active){
+                  show('Free time already running — ' + fmtLeft(flappyPromo.left) + ' of play left', true);
+                } else if(flappyPromo.claimed){
+                  show("FLAPPY26's free time has already been used on this device", false);
+                } else {
+                  claimPromo(flappyPromo, show, 'Free time started! Everything unlocked — all bird colors, all 4 character packs and all 8 backgrounds — for 30 minutes of play time.');
+                  if(input) input.value = '';
+                }
               } else if(bgCodeIndex(code) > 0){
                 var bn3 = bgCodeIndex(code);
                 if(everyUnlocked){
@@ -1468,12 +1485,13 @@
         tickPromo(frogPromo, dt);
         tickPromo(beePromo, dt);
         tickPromo(ghostPromo, dt);
+        tickPromo(flappyPromo, dt);
         var anyBg = false;
         for(var bt = 1; bt <= 8; bt++){ tickPromo(bgPromos[bt], dt); if(bgPromos[bt].active) anyBg = true; }
         promoSaveTimer += dt;
         if(promoSaveTimer >= 1){
           promoSaveTimer = 0;
-          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active || anyBg){ savePromos(); refreshPromoTime(); }
+          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active || flappyPromo.active || anyBg){ savePromos(); refreshPromoTime(); }
         }
       }
       /* Called when a run ends: any promo whose time ran out mid-run now locks. */
@@ -1484,6 +1502,7 @@
         if(frogPromo.pending){ frogPromo.pending = false; frogPromo.active = false; ended = true; }
         if(beePromo.pending){ beePromo.pending = false; beePromo.active = false; ended = true; }
         if(ghostPromo.pending){ ghostPromo.pending = false; ghostPromo.active = false; ended = true; }
+        if(flappyPromo.pending){ flappyPromo.pending = false; flappyPromo.active = false; ended = true; }
         for(var be = 1; be <= 8; be++){
           if(bgPromos[be].pending){ bgPromos[be].pending = false; bgPromos[be].active = false; ended = true; }
         }
