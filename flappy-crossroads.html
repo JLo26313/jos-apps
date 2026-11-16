@@ -55,6 +55,70 @@
       @media (prefers-color-scheme: dark){ .icon-btn{ background:linear-gradient(180deg,#1d364e,#16293c); } }
       .icon-btn:active{ transform:scale(.94); }
       .icon-btn.off{ opacity:.45; filter:grayscale(.8); }
+      .icon-btn[aria-pressed="true"]{ background:var(--gold); border-color:#c47f10; }
+      /* View buttons (rotate / big screen) live in the level bar */
+      .view-btn{ width:40px; min-height:40px; border-radius:12px; font-size:18px; flex:none; }
+      /* ---- rotated view (the 🔄 button): a web page inside an app view cannot
+         force the phone itself to turn — iOS and in-app browsers refuse the
+         orientation lock — so the page turns ITSELF sideways instead. The wrap
+         is re-laid-out with its width and height swapped and spun 90°, which
+         makes the field fill an upright phone. Works in any browser, no
+         permission needed. Flapping is tap-anywhere (no aim coordinates), so
+         taps and clicks keep working exactly as before in the spun view. ---- */
+      body.rotated .wrap{
+        position:fixed; left:50%; top:50%; z-index:50;
+        width:100dvh; height:100dvw; max-width:none;
+        transform:translate(-50%,-50%) rotate(90deg);
+        padding:6px 10px; display:flex; flex-direction:column; gap:6px;
+        background:linear-gradient(180deg, var(--bg) 0%, var(--bg2) 130%);
+        overflow:hidden;
+      }
+      body.rotated .hud{ margin-bottom:0; flex:none; gap:6px; }
+      body.rotated .chip{ padding:4px 4px 3px; border-radius:12px; }
+      body.rotated .chip .val{ font-size:20px; }
+      body.rotated .chip .lab{ font-size:9.5px; }
+      body.rotated .icon-btn{ width:44px; min-height:44px; font-size:19px; border-radius:12px; }
+      body.rotated .view-btn{ width:36px; min-height:36px; font-size:16px; }
+      body.rotated .level-bar{ margin-bottom:0; flex:none; padding:5px 10px; font-size:12px; border-radius:12px; }
+      body.rotated .level-bar .lv-name{ font-size:14.5px; }
+      body.rotated .howto{ display:none; }
+      body.rotated .stage{
+        flex:none; margin:auto;
+        width:min(100%, calc((100dvw - 122px) * 432 / 640));
+        border-radius:16px;
+      }
+      body.rotated .flap-btn{ width:64px; height:64px; font-size:15px; right:10px; bottom:10px; }
+      body.rotated .overlay{ padding:12px; }
+      body.rotated .overlay h1{ font-size:30px; }
+      body.rotated .overlay h2{ font-size:24px; }
+      /* ---- big screen (the ⛶ button): the wrap pins itself over the whole
+         viewport and the stage grows to fill it. Pure CSS, like the rotate
+         view — the browser Fullscreen API is NOT used: inside app views that
+         call can freeze the game, so the page expands itself instead. Tap ⛶
+         again to shrink back. ---- */
+      body.max .wrap{
+        position:fixed; inset:0; z-index:50;
+        height:100dvh; max-width:none;
+        padding:8px 10px; display:flex; flex-direction:column; gap:8px;
+        background:linear-gradient(180deg, var(--bg) 0%, var(--bg2) 130%);
+        overflow:hidden;
+      }
+      body.max .hud{ margin-bottom:0; flex:none; }
+      body.max .level-bar{ margin-bottom:0; flex:none; }
+      body.max .howto{ display:none; }
+      body.max .stage{
+        flex:none; margin:auto;
+        width:min(100%, calc((100dvh - 138px) * 432 / 640));
+      }
+      /* rotated + big screen together: keep the rotated wrap geometry
+         (the max rule above would otherwise undo its centering) */
+      body.rotated.max .wrap{
+        left:50%; top:50%; right:auto; bottom:auto;
+        width:100dvh; height:100dvw;
+      }
+      body.rotated.max .stage{
+        width:min(100%, calc((100dvw - 122px) * 432 / 640));
+      }
       /* Stage */
       .stage{
         position:relative; border-radius:22px; overflow:hidden;
@@ -326,6 +390,8 @@
         <span class="lv-name" id="lvName">Level 1 · Classic Day</span>
         <span class="lv-prog" id="lvProg">Target: 100 pts</span>
         <span class="lv-prog" id="lvTime">Time: 0:00</span>
+        <button class="icon-btn view-btn" id="rotBtn" aria-label="Rotate screen" aria-pressed="false" title="Rotate screen">🔄</button>
+        <button class="icon-btn view-btn" id="fsBtn" aria-label="Big screen" aria-pressed="false" title="Big screen">⛶</button>
       </div>
 
       <div class="stage" id="stage">
@@ -488,7 +554,7 @@
           <li><b>Levels:</b> every background is a level, and each one flies faster than the last. Hit the level's <b>target score</b> to clear it and unlock the next level plus a new character — you'll be asked if you want to play as them. <b>Stars are decided by time:</b> the faster you reach the target, the more stars, up to 3. Crash out and the game-over screen always gives you the choice: <b>try again, or buy the next level for $0.99</b> and skip ahead.</li>
           <li><b>Scoring:</b> +1 for every stretch of road, river, or grass you cross, +3 per golden egg. The traffic speeds up the further you get.</li>
         </ul>
-        <div class="keys">Keys: <kbd>Space</kbd> / <kbd>↑</kbd> flap &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> sound &nbsp;·&nbsp; 🎵 button (top right) turns the music on/off — it speeds up as you do</div>
+        <div class="keys">Keys: <kbd>Space</kbd> / <kbd>↑</kbd> flap &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> sound &nbsp;·&nbsp; 🎵 button (top right) turns the music on/off — it speeds up as you do &nbsp;·&nbsp; 🔄 button (in the level bar) turns the game sideways &nbsp;·&nbsp; ⛶ button makes it big screen — use both together for the full sideways field</div>
       </div>
     </div>
 
@@ -3379,6 +3445,29 @@
         musicBtn.setAttribute('aria-label', musicOn ? 'Turn music off' : 'Turn music on');
         if(!musicOn){ stopMusic(); }
         else if(state === 'playing'){ audio(); startMusic(); }
+      });
+      /* Rotate button: spins the whole game view 90° in the page itself.
+         The phone's own orientation lock is not available to a page inside
+         an app view, so the game turns instead of waiting for the phone to.
+         Pure CSS — no permission needed, works in any browser or app view.
+         Tap again to turn back. Flapping is tap-anywhere, so play continues
+         normally in the spun view. */
+      var rotBtn = document.getElementById('rotBtn');
+      rotBtn.addEventListener('click', function(){
+        audio();
+        var on = document.body.classList.toggle('rotated');
+        rotBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      /* Big-screen button: expands the game in the page with pure CSS. It
+         deliberately does NOT call the browser Fullscreen API — inside app
+         views that call froze Angry Turds, so this uses the same CSS-toggle
+         trick as the rotate button. Combines with rotate for the full
+         sideways field. Tap again to shrink back. */
+      var fsBtn = document.getElementById('fsBtn');
+      fsBtn.addEventListener('click', function(){
+        audio();
+        var on = document.body.classList.toggle('max');
+        fsBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       flapBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); flap(); });
       canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); if(state === 'playing') flap(); });
