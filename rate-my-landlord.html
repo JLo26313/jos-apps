@@ -349,7 +349,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
@@ -537,7 +536,7 @@
   /* ================= State ================= */
   var landlords = {};   // id -> {name, city, state, seed?}
   var reviewsBy = {};   // id -> [review,...]
-  var db = null, dbOk = false, storage = null;
+  var db = null, dbOk = false;
   var currentId = null;
   var searchTerm = "";
   var sortMode = "rating";
@@ -990,12 +989,10 @@
         authDomain: "jos-apps-scores.firebaseapp.com",
         databaseURL: "https://jos-apps-scores-default-rtdb.firebaseio.com",
         projectId: "jos-apps-scores",
-        storageBucket: "jos-apps-scores.firebasestorage.app",
         messagingSenderId: "208768682069",
         appId: "1:208768682069:web:87c29118a29114929d6cdc"
       });
       db = firebase.database();
-      try { storage = firebase.storage(); } catch(e2) { storage = null; }
       dbOk = true;
     } catch(e) {
       dbOk = false;
@@ -1122,12 +1119,54 @@
   });
 
   /* ================= Submit review ================= */
-  function uploadOneMedia(file, landlordId, reviewId){
-    if (!storage) return Promise.reject(new Error("storage-unavailable"));
-    var safeName = String(file.name || "file").replace(/[^\w.\-]+/g, "_");
-    if (!safeName) safeName = "file";
-    var ref = storage.ref("review-media/" + landlordId + "/" + reviewId + "/" + safeName);
-    return ref.put(file).then(function(){ return ref.getDownloadURL(); });
+  var CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/vg61ezdo/upload";
+  var CLOUDINARY_UPLOAD_PRESET = "rate_my_landlord";
+  var ALLOWED_MEDIA_EXTS = { jpg:1, jpeg:1, png:1, webp:1, gif:1, mp4:1, mov:1, webm:1, mp3:1, wav:1, m4a:1, ogg:1 };
+  function fileExtension(file){
+    var name = String((file && file.name) || "");
+    var m = name.match(/\.([a-z0-9]+)$/i);
+    return m ? m[1].toLowerCase() : "";
+  }
+  function validateMediaFile(file){
+    var ext = fileExtension(file);
+    // Fall back to MIME type when the name has no usable extension (e.g. some mobile recorders)
+    if (!ext && file && file.type){
+      var mime = String(file.type).toLowerCase();
+      if (mime === "image/jpeg") ext = "jpg";
+      else if (mime === "image/png") ext = "png";
+      else if (mime === "image/webp") ext = "webp";
+      else if (mime === "image/gif") ext = "gif";
+      else if (mime === "video/mp4") ext = "mp4";
+      else if (mime === "video/webm") ext = "webm";
+      else if (mime === "video/quicktime") ext = "mov";
+      else if (mime === "audio/mpeg") ext = "mp3";
+      else if (mime === "audio/wav" || mime === "audio/x-wav") ext = "wav";
+      else if (mime === "audio/mp4" || mime === "audio/x-m4a") ext = "m4a";
+      else if (mime === "audio/ogg") ext = "ogg";
+    }
+    if (!ALLOWED_MEDIA_EXTS[ext]){
+      return "“" + (file.name || "File") + "” is a type that can't be uploaded. Allowed: JPG, PNG, WebP, GIF, MP4, MOV, WebM, MP3, WAV, M4A, OGG.";
+    }
+    return "";
+  }
+  function uploadOneMedia(file){
+    var validationError = validateMediaFile(file);
+    if (validationError) return Promise.reject(new Error(validationError));
+    var formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    formData.append("resource_type", "auto");
+    return fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData })
+      .then(function(res){
+        return res.json().catch(function(){ return {}; }).then(function(data){
+          if (!res.ok){
+            var serverMsg = data && data.error && data.error.message ? String(data.error.message) : "";
+            throw new Error(serverMsg || ("Upload failed (" + res.status + ")"));
+          }
+          if (!data || !data.secure_url) throw new Error("Upload didn't return a file link.");
+          return String(data.secure_url);
+        });
+      });
   }
   function submitReview(ev){
     ev.preventDefault();
@@ -1179,9 +1218,10 @@
       return;
     }
 
-    if (!storage){
-      showMsg(msg, "Couldn't upload your media — file storage isn't reachable right now, so your review wasn't posted. Please try again in a bit.", false);
-      return;
+    // Validate types up front so a bad file fails before any upload starts
+    for (var vi = 0; vi < mediaFiles.length; vi++){
+      var vErr = validateMediaFile(mediaFiles[vi]);
+      if (vErr){ showMsg(msg, vErr + " Your review wasn't posted.", false); return; }
     }
 
     submitBtn.disabled = true;
@@ -1189,10 +1229,8 @@
     showMsg(msg, "Uploading your media\u2026", true);
 
     var newRef = db.ref("landlordReviews/" + currentId).push();
-    var reviewId = newRef.key;
-    var landlordId = currentId;
 
-    Promise.all(mediaFiles.map(function(f){ return uploadOneMedia(f, landlordId, reviewId); }))
+    Promise.all(mediaFiles.map(function(f){ return uploadOneMedia(f); }))
       .then(function(urls){
         var mediaStr = urls.join(",").slice(0,2000);
         if (mediaStr) review.media = mediaStr;
@@ -1203,9 +1241,15 @@
         resetBtn("Post review");
         setTimeout(function(){ if (currentId) renderDetail(); }, 400);
       })
-      .catch(function(){
+      .catch(function(err){
         resetBtn("Post review");
-        showMsg(msg, "Your media couldn't be uploaded, so your review wasn't posted. Check your connection and try again.", false);
+        var detail = err && err.message ? String(err.message) : "";
+        // Keep the message honest but avoid dumping raw server internals
+        if (detail && detail.length < 180 && !/api[_ ]?key|secret/i.test(detail)){
+          showMsg(msg, "Your media couldn't be uploaded, so your review wasn't posted. " + detail, false);
+        } else {
+          showMsg(msg, "Your media couldn't be uploaded, so your review wasn't posted. Check your connection and try again.", false);
+        }
       });
   }
 
