@@ -8,8 +8,18 @@
     <meta name="color-scheme" content="light dark" />
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" />
+    <link rel="apple-touch-icon" href="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" />
     <title>Angry Turds</title>
+    <meta name="description" content="Fling poop. Smash forts. Top the leaderboard." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Angry Turds" />
+    <meta property="og:description" content="Fling poop. Smash forts. Top the leaderboard." />
+    <meta property="og:image" content="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Angry Turds" />
+    <meta name="twitter:description" content="Fling poop. Smash forts. Top the leaderboard." />
+    <meta name="twitter:image" content="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" />
     <style>
       button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2rem; }
       * { box-sizing: border-box; }
@@ -194,6 +204,13 @@
         max-height:100%; overflow:auto;
       }
       .card .big{ font-size:3rem; line-height:1; filter:drop-shadow(0 6px 7px rgba(90,55,20,.40)); animation:turdbob 2.4s ease-in-out infinite; }
+      .card .title-art{
+        display:block; width:100%; max-width:340px; height:auto;
+        margin:0 auto 6px; border-radius:14px; border:2px solid var(--line);
+        box-shadow:0 8px 20px rgba(46,33,24,.22);
+      }
+      @media (max-width:700px){ .card .title-art{ max-width:250px; } }
+      @media (max-height:540px){ .card .title-art{ max-width:210px; } }
       @keyframes turdbob{ 0%,100%{ transform:translateY(0) rotate(-2deg); } 50%{ transform:translateY(-6px) rotate(2deg); } }
       @media (prefers-reduced-motion: reduce){ .card .big{ animation:none; } }
       .card h2{ margin:8px 0 4px; font-size:1.55rem; }
@@ -339,7 +356,7 @@
 
         <div class="overlay" id="startOverlay">
           <div class="card">
-            <div class="big">💩</div>
+            <img class="title-art" src="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" alt="Angry Turds title art — a turd character loaded in a slingshot, aiming at a fort full of cartoon people" width="1200" height="630" onerror="this.style.display='none'" />
             <h2>Angry Turds</h2>
             <p>The people have mocked the turds for the last time. Load the slingshot, let it fly, and splat every last one of them — 100 levels across two worlds, with a fresh backdrop every 10 levels.</p>
             <div class="challenge-banner" data-challenge-banner hidden></div>
