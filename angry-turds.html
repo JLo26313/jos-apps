@@ -242,6 +242,8 @@
       /* ---- shop: Stripe purchase buttons ---- */
       a.btn{ text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
       .btn.buy{ font-size:.95rem; padding:11px 18px; }
+      .btn.buy s{ opacity:.72; font-weight:700; margin:0 2px; }
+      .btn.buy .sale{ background:#ffd94d; color:#5b3a12; border-radius:6px; padding:1px 7px; margin-left:5px; font-size:.8em; text-shadow:none; box-shadow:inset 0 0 0 1.5px rgba(91,58,18,.35); }
       .shop{ margin-top:12px; border-top:1.5px dashed var(--line); padding-top:10px; }
       .shopbtns{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
       .secure-note{ font-size:.72rem; color:var(--muted); font-weight:700; margin-top:6px; }
@@ -322,6 +324,7 @@
         <div class="stat"><small>Score</small><span id="score">0</span></div>
         <div class="stat"><small>People left</small><span id="peopleLeft">0</span></div>
         <div class="stat queue" id="queue" title="Turds remaining"></div>
+        <div class="stat" id="turd26Stat" hidden><small>TURD26 trial</small><span id="turd26Time">30:00</span></div>
         <div class="spacer"></div>
         <button class="iconbtn" id="rotBtn" aria-label="Rotate screen" aria-pressed="false">🔄</button>
         <button class="iconbtn" id="fsBtn" aria-label="Big screen" aria-pressed="false">⛶</button>
@@ -351,8 +354,8 @@
             </div>
             <div class="btnrow">
               <button class="btn" id="playBtn">▶ Start flinging</button>
-              <a class="btn alt buy buy-full-link" href="https://buy.stripe.com/3cI9AS2FS5xH2NC7G0cAo0A" target="_blank" rel="noopener">🛒 Full Game — $21.99</a>
-              <a class="btn buy buy-world2-link" href="https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C" target="_blank" rel="noopener">🚀 World 2 — $21.99</a>
+              <a class="btn alt buy buy-whole-link" href="https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H" target="_blank" rel="noopener">🛒 Whole Game — <s>$43.98</s> $9.99<span class="sale">SALE</span></a>
+              <a class="btn buy buy-half-link" href="https://buy.stripe.com/bJe7sK4004tDdsgd0kcAo0F" target="_blank" rel="noopener">🌍 First Half — <s>$21.99</s> $7.99<span class="sale">SALE</span></a>
             </div>
             <div class="promo">
               <label for="promoInput">Promo code</label>
@@ -365,13 +368,14 @@
             <div class="lvlgrid" id="lvlGrid"></div>
             <div class="shop">
               <div class="shopbtns">
-                <a class="btn buy buy-full-link" href="https://buy.stripe.com/3cI9AS2FS5xH2NC7G0cAo0A" target="_blank" rel="noopener">🛒 Buy Full Game — $21.99</a>
-                <a class="btn alt buy buy-next-link" href="https://buy.stripe.com/eVq00ieoA1hr0Fu5xScAo0B" target="_blank" rel="noopener">⏭ Buy Next Level — $0.99</a>
-                <a class="btn buy buy-world2-link" href="https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C" target="_blank" rel="noopener">🚀 Buy World 2 — $21.99</a>
+                <a class="btn buy buy-whole-link" href="https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H" target="_blank" rel="noopener">🛒 Whole Game — <s>$43.98</s> $9.99<span class="sale">SALE</span></a>
+                <a class="btn alt buy buy-half-link" href="https://buy.stripe.com/bJe7sK4004tDdsgd0kcAo0F" target="_blank" rel="noopener">🌍 First Half (Levels 1–50) — <s>$21.99</s> $7.99<span class="sale">SALE</span></a>
+                <a class="btn buy buy-bg-link" href="https://buy.stripe.com/eVq7sKfsEd09dsg7G0cAo0E" target="_blank" rel="noopener">🎨 10 Levels — <s>$6.99</s> $4.99<span class="sale">SALE</span></a>
+                <a class="btn alt buy buy-skip-link" href="https://buy.stripe.com/fZu5kC3JWf8h4VK6BWcAo0G" target="_blank" rel="noopener">⏭ Skip Level — <s>$0.99</s> $0.79<span class="sale">SALE</span></a>
               </div>
-              <div class="unlocked-line full-unlocked-line" hidden>Full game unlocked — World 1: all 50 levels &amp; every turd type ✓</div>
-              <div class="unlocked-line world2-unlocked-line" hidden>World 2 unlocked — 50 space levels across 5 planets ✓ 🚀</div>
-              <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · World 1 levels can always be earned by playing, too · World 2 is a separate $21.99 world</div>
+              <div class="unlocked-line full-unlocked-line" hidden>Whole game unlocked — all 100 levels across both worlds &amp; every turd type ✓ 🚀</div>
+              <div class="unlocked-line half-unlocked-line" hidden>First half unlocked — all 50 World 1 levels are open ✓ 🌍</div>
+              <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · levels can always be earned by playing, too</div>
               <div class="shopmsg" id="shopMsg" aria-live="polite"></div>
             </div>
             <div class="name-block">
@@ -403,7 +407,7 @@
             <p class="score-line" id="endScore">Score: 0</p>
             <p id="endMsg"></p>
             <div class="buy-next-wrap" id="buyNextWrap" hidden>
-              <a class="btn buy buy-next-link" href="https://buy.stripe.com/eVq00ieoA1hr0Fu5xScAo0B" target="_blank" rel="noopener">⏭ Stuck? Buy Next Level — $0.99</a>
+              <a class="btn buy buy-skip-link" href="https://buy.stripe.com/fZu5kC3JWf8h4VK6BWcAo0G" target="_blank" rel="noopener">⏭ Stuck? Skip Level — <s>$0.99</s> $0.79<span class="sale">SALE</span></a>
               <div class="secure-note">Secure checkout via Stripe · unlocks the next level on this device</div>
             </div>
             <div class="btnrow">
@@ -482,10 +486,15 @@ var state = {
   sound: true,
   drag: null,            /* {x,y} current drag point */
   cloudT: 0,
-  masterUnlocked: false, /* EVERY26: all levels + all turd types, saved on this device only */
-  fullPurchased: false,  /* $21.99 Full Game purchase: same unlock as EVERY26, saved on this device only */
+  masterUnlocked: false, /* EVERY26 or the Whole Game purchase: all levels + all turd types, saved on this device only */
+  fullPurchased: false,  /* legacy Full Game purchase: same unlock as EVERY26, saved on this device only */
   every26: false,        /* true only when the unlock came from the EVERY26 promo code */
-  world2Unlocked: false, /* $21.99 World 2 purchase: 50 space levels, saved on this device only */
+  world2Unlocked: false, /* World 2 access (legacy purchase or Whole Game): 50 space levels, saved on this device only */
+  halfPurchased: false,  /* First Half purchase: levels 1–50 open, saved on this device only */
+  wholePurchased: false, /* Whole Game purchase: everything open, saved on this device only */
+  turd26Used: false,     /* TURD26 is a one-time code per device — true once it has ever been entered */
+  turd26Active: false,   /* TURD26 trial running: full unlock while the playtime clock lasts */
+  turd26Left: 0,         /* TURD26 seconds of playtime left (counts down only while playing) */
   drops: [],             /* diarrhea splats dropped mid-flight by the Level 38 turd */
   levelTurds: []         /* effective turd list for the current level (includes Mega after master unlock) */
 };
@@ -858,7 +867,7 @@ function buildLevel(idx){
   if(idx >= 37 && state.levelTurds.length >= 2){
     state.levelTurds[1] = 'squirter';
   }
-  if(state.masterUnlocked && state.levelTurds.indexOf('mega') < 0 && state.levelTurds.length >= 2){
+  if((state.masterUnlocked || state.turd26Active) && state.levelTurds.indexOf('mega') < 0 && state.levelTurds.length >= 2){
     var mi = state.levelTurds.length - 1;
     if(state.levelTurds[mi] === 'squirter') mi = state.levelTurds.length - 2;
     state.levelTurds[mi] = 'mega';
@@ -937,7 +946,7 @@ function updateHUD(){
   var list = (state.levelTurds && state.levelTurds.length) ? state.levelTurds : LEVELS[state.level].turds;
   var q = document.getElementById('queue');
   q.innerHTML = '';
-  q.title = state.masterUnlocked ? 'Turds remaining — Mega unlocked!' : 'Turds remaining';
+  q.title = (state.masterUnlocked || state.turd26Active) ? 'Turds remaining — Mega unlocked!' : 'Turds remaining';
   list.forEach(function(t, i){
     var s = document.createElement('span');
     s.textContent = '💩';
@@ -1372,7 +1381,7 @@ function loseLevel(){
   document.getElementById('nextBtn').textContent = '↻ Try again';
   showOverlay('endOverlay');
   buildLevelGrid();
-  /* Stuck on this level? The $0.99 next-level shortcut lives right here. */
+  /* Stuck on this level? The $0.79 Skip Level shortcut lives right here. */
   document.getElementById('buyNextWrap').hidden = !canBuyNext();
   refreshShop();
   onLevelFinished();
@@ -2479,7 +2488,7 @@ function frame(ts){
   var dt = Math.min(0.033, (ts - lastT) / 1000 || 0.016);
   lastT = ts;
   state.cloudT += dt;
-  if(state.mode !== 'paused' && state.mode !== 'menu') step(dt);
+  if(state.mode !== 'paused' && state.mode !== 'menu'){ step(dt); tickTurd26(dt); }
   else state.time += dt;
   updateCam(dt);
   draw();
@@ -2618,7 +2627,7 @@ function buildLevelGrid(){
       hd.className = 'gridhead';
       hd.textContent = i === 0
         ? '🌍 World 1 · Earth — Levels 1–50'
-        : '🚀 World 2 · Space — Levels 51–100' + (world2Open() ? '' : ' 🔒 $21.99');
+        : '🚀 World 2 · Space — Levels 51–100' + (world2Open() ? '' : ' 🔒 Whole Game');
       g.appendChild(hd);
     }
     var b = document.createElement('button');
@@ -2631,11 +2640,11 @@ function buildLevelGrid(){
     (function(idx){
       b.addEventListener('click', function(){
         if(idx >= 50 && !world2Open()){
-          shopNote('World 2 is locked — 50 space levels across 5 planets for $21.99 in the shop below. 🚀');
+          shopNote('World 2 is locked — 50 space levels across 5 planets, part of the Whole Game on sale in the shop below. 🚀');
           return;
         }
-        if(idx >= state.unlocked){
-          shopNote('Level ' + (idx + 1) + ' is locked — clear level ' + idx + ' first, or grab the next level for $0.99 below. ⏭');
+        if(idx >= state.unlocked && !state.turd26Active){
+          shopNote('Level ' + (idx + 1) + ' is locked — clear level ' + idx + ' first, or use Skip Level / 10 Levels in the shop below. ⏭');
           return;
         }
         startLevel(idx, true);
@@ -2649,7 +2658,7 @@ function startLevel(idx, resetTotal){
     state.mode = 'menu';
     buildLevelGrid();
     showOverlay('startOverlay');
-    shopNote('World 2 is locked — grab it for $21.99 in the shop below and blast off! 🚀');
+    shopNote('World 2 is locked — it comes with the Whole Game on sale in the shop below. Grab it and blast off! 🚀');
     return;
   }
   state.level = idx;
@@ -2710,7 +2719,7 @@ document.getElementById('nextBtn').addEventListener('click', function(){
     state.mode = 'menu';
     buildLevelGrid();
     showOverlay('startOverlay');
-    shopNote('World 1 flushed! 🚀 World 2 — 50 space levels on 5 planets — is $21.99 in the shop below.');
+    shopNote('World 1 flushed! 🚀 World 2 — 50 space levels on 5 planets — comes with the Whole Game on sale in the shop below.');
     return;
   }
   if(state.mode === 'won' && state.level < LEVELS.length - 1) startLevel(state.level + 1, false);
@@ -2737,12 +2746,69 @@ function setPause(on){
 }
 document.getElementById('pauseBtn').addEventListener('click', function(){ setPause(state.mode !== 'paused'); });
 document.getElementById('resumeBtn').addEventListener('click', function(){ setPause(false); });
-/* ---- promo code: EVERY26 is a permanent master unlock, kept on this device only ---- */
+/* ---- promo codes, kept on this device only ----
+   EVERY26: permanent master unlock of everything.
+   TURD26: one-time code — a full unlock (all 100 levels, all turd types,
+   World 2) for 30 minutes of ACTUAL PLAYTIME. The clock only ticks while a
+   level is being played (never in the menu, never while paused), the time
+   left is saved on this device so it survives a reload, and once the code
+   has been used it can never be used again on this device. */
 function promoMsg(text, ok){
   var m = document.getElementById('promoMsg');
   if(!m) return;
   m.textContent = text;
   m.className = 'promomsg ' + (ok ? 'ok' : 'err');
+}
+function turd26Clock(sec){
+  sec = Math.max(0, Math.ceil(sec));
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+function refreshTurd26Chip(){
+  var chip = document.getElementById('turd26Stat');
+  var t = document.getElementById('turd26Time');
+  if(chip) chip.hidden = !state.turd26Active;
+  if(t) t.textContent = turd26Clock(state.turd26Left);
+}
+function saveTurd26(){
+  lsSet('at_turd26_used', state.turd26Used ? '1' : '0');
+  lsSet('at_turd26_left', String(Math.max(0, Math.ceil(state.turd26Left))));
+}
+function expireTurd26(){
+  state.turd26Active = false;
+  state.turd26Left = 0;
+  saveTurd26();
+  refreshTurd26Chip();
+  buildLevelGrid();
+  refreshShop();
+  flashTip('⏰ TURD26 time is up — the full unlock has locked again.');
+  if(state.level >= 50 || state.level >= state.unlocked){
+    state.mode = 'menu';
+    buildLevelGrid();
+    showOverlay('startOverlay');
+    shopNote('⏰ Your TURD26 trial ran out — the full unlock locked again. The Whole Game is on sale below if you want it for keeps!');
+  }
+}
+var turd26SaveT = 0;
+function tickTurd26(dt){
+  if(!state.turd26Active) return;
+  state.turd26Left -= dt;
+  turd26SaveT += dt;
+  if(turd26SaveT >= 1){ turd26SaveT = 0; saveTurd26(); }
+  refreshTurd26Chip();
+  if(state.turd26Left <= 0) expireTurd26();
+}
+function applyTurd26(){
+  state.turd26Used = true;
+  state.turd26Active = true;
+  state.turd26Left = 30 * 60;
+  saveTurd26();
+  refreshTurd26Chip();
+  buildLevelGrid();
+  refreshShop();
+  if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
+  promoMsg('TURD26 active! 🎉 Everything is unlocked for 30:00 of playtime — the clock only runs while you play. One-time code: it can\u2019t be used again on this device.', true);
+  flashTip('TURD26: full unlock for 30:00 of playtime! 🎉');
 }
 function applyMasterUnlock(silent){
   state.masterUnlocked = true;
@@ -2763,6 +2829,13 @@ function tryPromo(){
   if(code === 'EVERY26'){
     if(state.masterUnlocked){ promoMsg('Already unlocked — everything is open! 🎉', true); return; }
     applyMasterUnlock(false);
+    sfx.win();
+    burst(640, 260, 30, ['#ffe066', '#ff9d5c', '#8fbf62'], 380, 1.0, 500, 7);
+  } else if(code === 'TURD26'){
+    if(state.masterUnlocked){ promoMsg('Everything is already unlocked for keeps on this device — no trial needed! 🎉', true); return; }
+    if(state.turd26Active){ promoMsg('TURD26 is already running — ' + turd26Clock(state.turd26Left) + ' of full unlock left. Go play! 🎉', true); return; }
+    if(state.turd26Used){ promoMsg('TURD26 was already used on this device — it\u2019s a one-time code and won\u2019t work again.', false); return; }
+    applyTurd26();
     sfx.win();
     burst(640, 260, 30, ['#ffe066', '#ff9d5c', '#8fbf62'], 380, 1.0, 500, 7);
   } else {
@@ -2803,57 +2876,105 @@ function loadProgress(){
 }
 
 /* ============================== shop: Stripe purchases ==============================
-   Two live Stripe payment links (their buttons are plain anchors in the HTML):
-     Full Game $21.99  https://buy.stripe.com/3cI9AS2FS5xH2NC7G0cAo0A
-       → returns to the game with ?fullgame=success
-     Next Level $0.99  https://buy.stripe.com/eVq00ieoA1hr0Fu5xScAo0B
-       → returns to the game with ?nextlevel=success
-     World 2 $21.99  https://buy.stripe.com/4gM14m5S4e4dfAo21GcAo0C
-       → returns to the game with ?world2=success (50 space levels, a separate world)
+   Four live Stripe payment links on SALE (their buttons are plain anchors in
+   the HTML, each showing the regular price struck through next to the sale
+   price):
+     Skip Level $0.79 (reg $0.99)  https://buy.stripe.com/fZu5kC3JWf8h4VK6BWcAo0G
+       → returns to the game with ?skip=success — unlocks the next locked level
+     10 Levels $4.99 (reg $6.99)  https://buy.stripe.com/eVq7sKfsEd09dsg7G0cAo0E
+       → returns with ?background=success — unlocks the next locked background
+         (one background = the next block of 10 levels)
+     First Half $7.99 (reg $21.99)  https://buy.stripe.com/bJe7sK4004tDdsgd0kcAo0F
+       → returns with ?half=success — unlocks levels 1–50 (World 1)
+     Whole Game $9.99 (reg $43.98)  https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H
+       → returns with ?wholegame=success — unlocks everything: all 100 levels,
+         all turd types and World 2
    Levels stay earnable by beating the previous level; the purchases are
-   shortcuts for when you're stuck. Both unlocks are permanent on this device. */
+   shortcuts for when you're stuck. All unlocks are permanent on this device. */
 function shopNote(text){
   var m = document.getElementById('shopMsg');
   if(m) m.textContent = text;
 }
+function fullAccess(){
+  return !!(state.masterUnlocked || state.turd26Active);
+}
 function world2Open(){
-  return !!(state.world2Unlocked || state.every26);
+  return !!(state.world2Unlocked || state.every26 || state.turd26Active);
 }
 function canPlay(idx){
+  if(fullAccess()) return true;
   return idx < state.unlocked && (idx < 50 || world2Open());
 }
 function canBuyNext(){
   if(state.masterUnlocked) return false;
   return state.unlocked < (world2Open() ? LEVELS.length : 50);
 }
+function canBuyBackground(){
+  if(state.masterUnlocked) return false;
+  return state.unlocked < LEVELS.length;
+}
+function hideLinks(sel, hide){
+  var els = document.querySelectorAll(sel);
+  for(var i = 0; i < els.length; i++) els[i].style.display = hide ? 'none' : '';
+}
 function refreshShop(){
   var full = state.masterUnlocked;
-  var fullLinks = document.querySelectorAll('.buy-full-link');
-  for(var i = 0; i < fullLinks.length; i++) fullLinks[i].style.display = full ? 'none' : '';
-  var showNext = canBuyNext();
-  var nextLinks = document.querySelectorAll('.buy-next-link');
-  for(var j = 0; j < nextLinks.length; j++) nextLinks[j].style.display = showNext ? '' : 'none';
+  hideLinks('.buy-whole-link', full);
+  hideLinks('.buy-half-link', full || state.halfPurchased || state.unlocked >= 50);
+  hideLinks('.buy-bg-link', !canBuyBackground());
+  hideLinks('.buy-skip-link', !canBuyNext());
   var lines = document.querySelectorAll('.full-unlocked-line');
   for(var k = 0; k < lines.length; k++) lines[k].hidden = !full;
-  var w2o = world2Open();
-  var w2Links = document.querySelectorAll('.buy-world2-link');
-  for(var m = 0; m < w2Links.length; m++) w2Links[m].style.display = w2o ? 'none' : '';
-  var w2Lines = document.querySelectorAll('.world2-unlocked-line');
-  for(var n = 0; n < w2Lines.length; n++) w2Lines[n].hidden = !w2o;
+  var hLines = document.querySelectorAll('.half-unlocked-line');
+  for(var n = 0; n < hLines.length; n++) hLines[n].hidden = !(!full && state.halfPurchased);
 }
-function grantFullUnlock(){
+function grantWholeGame(){
   state.masterUnlocked = true;
-  state.fullPurchased = true;
+  state.wholePurchased = true;
+  state.world2Unlocked = true;
   state.unlocked = LEVELS.length;
-  lsSet('angryTurdsFullGame', '1');
+  lsSet('at_whole_game', '1');
+  lsSet('angryTurdsWorld2', '1');
   saveProgress();
   buildLevelGrid();
   refreshShop();
   if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
-  shopNote('Full game unlocked! All 50 World 1 levels + all turd types (Normal, Chonk & Mega) are open. 🎉');
-  flashTip('Full game unlocked — World 1 + Mega turds! 🎉');
+  shopNote('Whole game unlocked! All 100 levels across both worlds + all turd types (Normal, Chonk & Mega) are open. 🎉🚀');
+  flashTip('Whole game unlocked — everything is open! 🎉');
 }
-function grantNextLevel(){
+function grantHalf(){
+  state.halfPurchased = true;
+  if(state.unlocked < 50) state.unlocked = 50;
+  lsSet('at_half', '1');
+  saveProgress();
+  buildLevelGrid();
+  refreshShop();
+  shopNote('First half unlocked! All 50 World 1 levels are open. 🎉🌍');
+  flashTip('First half unlocked — levels 1–50 open! 🎉');
+}
+function grantBackground(){
+  if(state.masterUnlocked){
+    shopNote('Everything is already unlocked on this device — no purchase needed. 🎉');
+    return;
+  }
+  if(state.unlocked >= LEVELS.length){
+    shopNote('All 100 levels are already open on this device — no purchase needed. 🎉');
+    return;
+  }
+  /* one background = the block of 10 levels the next locked level sits in */
+  var target = Math.min(LEVELS.length, (Math.floor(state.unlocked / 10) + 1) * 10);
+  state.unlocked = target;
+  if(target > 50 && !state.world2Unlocked){
+    state.world2Unlocked = true;
+    lsSet('angryTurdsWorld2', '1');
+  }
+  saveProgress();
+  buildLevelGrid();
+  refreshShop();
+  shopNote('10 levels unlocked — everything up to level ' + target + ' is open. 🎉🎨');
+  flashTip('Levels up to ' + target + ' unlocked! 🎉');
+}
+function grantSkipLevel(){
   if(state.masterUnlocked){
     shopNote('Everything is already unlocked on this device — no purchase needed. 🎉');
     return;
@@ -2863,37 +2984,31 @@ function grantNextLevel(){
     saveProgress();
     buildLevelGrid();
     refreshShop();
-    shopNote('Next level unlocked — level ' + state.unlocked + ' is open. Good luck in there! 🎉');
+    shopNote('Level skipped — level ' + state.unlocked + ' is open. Good luck in there! 🎉');
     flashTip('Level ' + state.unlocked + ' unlocked! 🎉');
   }
 }
-function grantWorld2(){
-  state.world2Unlocked = true;
-  lsSet('angryTurdsWorld2', '1');
-  if(state.unlocked < 51) state.unlocked = 51;
-  saveProgress();
-  buildLevelGrid();
-  refreshShop();
-  shopNote('World 2 unlocked! 50 space levels across 5 planets are open. 🚀🪐');
-  flashTip('World 2 unlocked — blast off! 🚀');
-}
-/* Stripe sends the player back with ?fullgame=success or ?nextlevel=success.
-   Apply the unlock once, then clean those flags out of the address (keeping
-   any challenge link intact) so a refresh can't grant the next level twice. */
+/* Stripe sends the player back with a success flag (?skip=success,
+   ?background=success, ?half=success or ?wholegame=success). Apply the
+   unlock once, then clean those flags out of the address (keeping any
+   challenge link intact) so a refresh can't grant anything twice. */
 function handlePurchaseReturn(){
   var params;
   try{ params = new URLSearchParams(window.location.search); }catch(e){ return; }
-  var full = params.get('fullgame') === 'success';
-  var next = params.get('nextlevel') === 'success';
-  var w2 = params.get('world2') === 'success';
-  if(!full && !next && !w2) return;
-  if(full) grantFullUnlock();
-  else if(w2) grantWorld2();
-  else if(next) grantNextLevel();
+  var whole = params.get('wholegame') === 'success';
+  var half = params.get('half') === 'success';
+  var bg = params.get('background') === 'success';
+  var skip = params.get('skip') === 'success';
+  if(!whole && !half && !bg && !skip) return;
+  if(whole) grantWholeGame();
+  else if(half) grantHalf();
+  else if(bg) grantBackground();
+  else if(skip) grantSkipLevel();
   try{
-    params.delete('fullgame');
-    params.delete('nextlevel');
-    params.delete('world2');
+    params.delete('wholegame');
+    params.delete('half');
+    params.delete('background');
+    params.delete('skip');
     var rest = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
   }catch(e){}
@@ -3179,12 +3294,21 @@ loadProgress();
 try{ if(localStorage.getItem('angryTurdsMaster') === 'EVERY26'){ state.masterUnlocked = true; state.every26 = true; state.unlocked = LEVELS.length; } }catch(e){}
 if(lsGet('angryTurdsFullGame') === '1'){ state.masterUnlocked = true; state.fullPurchased = true; state.unlocked = LEVELS.length; }
 if(lsGet('angryTurdsWorld2') === '1'){ state.world2Unlocked = true; }
+if(lsGet('at_half') === '1'){ state.halfPurchased = true; if(state.unlocked < 50) state.unlocked = 50; }
+if(lsGet('at_whole_game') === '1'){ state.masterUnlocked = true; state.wholePurchased = true; state.world2Unlocked = true; state.unlocked = LEVELS.length; }
+if(lsGet('at_turd26_used') === '1'){
+  state.turd26Used = true;
+  var t26Left = parseFloat(lsGet('at_turd26_left') || '0');
+  if(!isNaN(t26Left) && t26Left > 0){ state.turd26Left = t26Left; state.turd26Active = true; }
+}
 buildLevel(0);
 buildLevelGrid();
 state.mode = 'menu';
 handlePurchaseReturn();
 refreshShop();
+refreshTurd26Chip();
 if(state.masterUnlocked) promoMsg('Full access on this device — Mega turds unlocked! 🎉', true);
+else if(state.turd26Active) promoMsg('TURD26 trial running — ' + turd26Clock(state.turd26Left) + ' of full unlock left. The clock only runs while you play! 🎉', true);
 initSocial();
 updateHUD();
 </script>
