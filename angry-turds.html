@@ -268,6 +268,14 @@
       .shopmsg:empty{ min-height:0; margin-top:0; }
       .unlocked-line{ font-weight:800; color:var(--accent2); margin-top:6px; font-size:.92rem; }
       .buy-next-wrap{ margin-top:10px; }
+      /* ---- turd arsenal: every launchable, what it does, how it's earned ---- */
+      .arsenal{ margin:12px auto 0; max-width:360px; text-align:left; border-top:1.5px dashed var(--line); padding-top:10px; }
+      .arsenal h3{ margin:0 0 6px; font-size:.95rem; text-align:center; }
+      .arsenal .arow{ display:flex; gap:9px; align-items:baseline; padding:4px 2px; font-size:.86rem; font-weight:600; color:var(--muted); line-height:1.35; }
+      .arsenal .arow .aemoji{ font-size:1.25rem; flex:none; width:26px; text-align:center; }
+      .arsenal .arow b{ color:var(--ink); }
+      .arsenal .arow .aunlock{ display:block; font-size:.74rem; font-weight:800; letter-spacing:.3px; }
+      .arsenal .arow.locked{ opacity:.55; }
       /* ---- leaderboard, player name, challenges & sharing (same setup as Flappy Crossroads) ---- */
       .challenge-banner{
         margin:10px auto 0; max-width:340px;
@@ -374,6 +382,10 @@
               <div>🚀 <b>World 2</b> blasts off into space: 50 more levels, a new planet every 10 levels.</div>
               <div>🏆 Splat everyone before you run out of turds.</div>
             </div>
+            <div class="arsenal" id="arsenal">
+              <h3>🧻 Turd arsenal — what you can launch</h3>
+              <div id="arsenalRows"></div>
+            </div>
             <div class="btnrow">
               <button class="btn" id="playBtn">▶ Start flinging</button>
               <a class="btn alt buy buy-whole-link" href="https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H" target="_blank" rel="noopener">🛒 Whole Game — <s>$43.98</s> $9.99<span class="sale">SALE</span></a>
@@ -479,7 +491,7 @@
         </div>
       </div>
 
-      <p class="tip" id="tip">Drag the turd back and let go · Tap while it flies for a fart boost 💨 · The Level 38 turd drops a splat on a second tap · Tap 🔄 to rotate the screen · ⛶ for the big screen</p>
+      <p class="tip" id="tip">Drag the turd back and let go · Tap while it flies for a fart boost 💨 · Special turds — Fire 🔥 Ice 🧊 Bouncy 🏀 Bomb 💣 — are earned as you climb · The 🧻 Toilet Paper Roll waits at Level 100 · Tap 🔄 to rotate · ⛶ for the big screen</p>
     </div>
 
 <script>
@@ -624,12 +636,15 @@ var EXTRA_NAMES = [
 (function(){
   function pickMats(gi, base){
     var mats = base.slice();
-    /* later levels swap more wood/glass for stone */
-    if(gi > 14 && mats[0] === 'wood') mats[0] = 'stone';
-    if(gi > 22 && mats.length > 2 && mats[2] === 'glass') mats[2] = 'wood';
-    if(gi > 28 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'wood';
-    if(gi > 36 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
-    if(gi > 40 && mats.length > 1 && mats[1] === 'wood') mats[1] = 'stone';
+    /* the deeper in, the more wood and glass give way to stone — the ramp
+       now bites much earlier and ends with barely any glass left */
+    if(gi > 6 && mats[0] === 'wood') mats[0] = 'stone';
+    if(gi > 12 && mats.length > 2 && mats[2] === 'glass') mats[2] = 'wood';
+    if(gi > 18 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'stone';
+    if(gi > 24 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
+    if(gi > 30 && mats.length > 1 && mats[1] === 'wood') mats[1] = 'stone';
+    if(gi > 36) mats = mats.map(function(m){ return m === 'glass' ? 'stone' : m; });
+    if(gi > 42) mats = mats.map(function(m){ return m === 'wood' ? 'stone' : m; });
     return mats;
   }
   function stack(blocks, x, n, mats){
@@ -651,12 +666,12 @@ var EXTRA_NAMES = [
     var blocks = [], people = [];
     var t = gi % 7;
     var hard = gi / EXTRA_NAMES.length;
-    var turdCount = Math.min(6, 3 + (gi % 3) + (hard > 0.6 ? 1 : 0));
+    var turdCount = Math.min(6, 3 + (gi % 3) + (gi >= 6 ? 1 : 0) + (hard > 0.6 ? 1 : 0));
     var turds = makeTurds(turdCount, hard > 0.2 || t === 3 || t === 6);
     if(t === 0){
       /* Single tower, taller as levels progress */
       var x0 = 900 + ((gi % 3) - 1) * 50;
-      var h0 = 2 + (gi % 3) + (hard > 0.7 ? 1 : 0);
+      var h0 = 3 + (gi % 3) + (hard > 0.6 ? 1 : 0);
       var top0 = stack(blocks, x0, h0, pickMats(gi, ['wood','glass','wood','stone']));
       var roof0 = beam(blocks, x0, top0, 190, 'wood');
       people.push([x0, roof0]);
@@ -665,7 +680,7 @@ var EXTRA_NAMES = [
     } else if(t === 1){
       /* Two towers + bridge */
       var ax = 840, bx = 1050;
-      var ha = 2 + (gi % 2), hb = 2 + ((gi + 1) % 2);
+      var ha = 3 + (gi % 2), hb = 3 + ((gi + 1) % 2);
       var ta = stack(blocks, ax, ha, pickMats(gi, ['wood','wood','glass']));
       var tb = stack(blocks, bx, hb, pickMats(gi, ['stone','wood','wood']));
       var bridgeTop = Math.max(ta, tb);
@@ -691,8 +706,8 @@ var EXTRA_NAMES = [
     } else if(t === 3){
       /* Castle: two tall towers, long roof, keep on top */
       var lx = 815, rx = 1085;
-      var lt = stack(blocks, lx, 3, pickMats(gi, ['stone','wood','wood']));
-      var rt = stack(blocks, rx, 3, pickMats(gi, ['stone','wood','glass']));
+      var lt = stack(blocks, lx, 3 + (hard > 0.45 ? 1 : 0), pickMats(gi, ['stone','wood','wood','stone']));
+      var rt = stack(blocks, rx, 3 + (hard > 0.45 ? 1 : 0), pickMats(gi, ['stone','wood','glass','stone']));
       var ct = beam(blocks, 950, lt, 360, hard > 0.5 ? 'stone' : 'wood');
       blocks.push([950, ct + 38, 76, 76, 'wood']);
       var ct2 = beam(blocks, 950, ct + 76, 170, 'wood');
@@ -700,7 +715,7 @@ var EXTRA_NAMES = [
     } else if(t === 4){
       /* Triple towers */
       var xs = [790, 935, 1080];
-      var hs = [2 + (gi % 2), 3, 2 + ((gi + 1) % 2)];
+      var hs = [3 + (gi % 2), 3 + (hard > 0.5 ? 1 : 0), 3 + ((gi + 1) % 2)];
       for(var xi = 0; xi < 3; xi++){
         var xt = stack(blocks, xs[xi], hs[xi], pickMats(gi, ['wood','glass','stone']));
         var xr = beam(blocks, xs[xi], xt, 150, 'wood');
@@ -711,7 +726,7 @@ var EXTRA_NAMES = [
       /* Staircase up */
       var sx = 790;
       for(var si = 0; si < 4; si++){
-        var st = stack(blocks, sx + si * 92, si + 1, pickMats(gi, ['wood','wood','glass','stone']));
+        var st = stack(blocks, sx + si * 92, si + 1 + (si >= 2 && hard > 0.35 ? 1 : 0), pickMats(gi, ['wood','wood','glass','stone']));
         if(si === 3){
           var sr = beam(blocks, sx + si * 92, st, 170, 'wood');
           people.push([sx + si * 92, sr]);
@@ -727,16 +742,37 @@ var EXTRA_NAMES = [
       stack(blocks, bx2 + 84, 1, pickMats(gi, ['stone']));
       blocks.push([bx2 - 84, 114, 76, 76, 'wood']);
       blocks.push([bx2 + 84, 114, 76, 76, 'wood']);
-      var bt2 = beam(blocks, bx2, 152, 300, hard > 0.5 ? 'stone' : 'wood');
+      var bunkerTop = 152;
+      if(hard > 0.5){
+        blocks.push([bx2 - 84, 190, 76, 76, 'stone']);
+        blocks.push([bx2 + 84, 190, 76, 76, 'stone']);
+        bunkerTop = 228;
+      }
+      var bt2 = beam(blocks, bx2, bunkerTop, 300, hard > 0.5 ? 'stone' : 'wood');
       blocks.push([bx2, bt2 + 38, 76, 76, 'glass']);
       people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt2 + 76]); people.push([bx2 + 190]);
     }
     /* difficulty ramp: the deeper into World 1, the more people crowd the field */
-    var extraP = Math.floor(gi / 11); /* 0 early on, up to +4 by the last levels */
-    var spotsP = [712, 1214, 664, 1248];
+    var extraP = Math.floor(gi / 8); /* 0 early on, up to +5 by the last levels */
+    var spotsP = [712, 1214, 664, 1248, 736];
     for(var epi = 0; epi < extraP; epi++) people.push([spotsP[epi % spotsP.length]]);
     LEVELS.push(L(turds, blocks, people, EXTRA_NAMES[gi]));
   }
+})();
+
+/* ---- Level 30 · Glass Castle: beatability fix. The harder ramp left this
+   one on a knife edge — spot-check runs kept ending with exactly 1 person
+   still standing. It keeps all 7 people and both stone-capped towers, but
+   the great roof beam is wood instead of stone (so the Fire Turd has
+   something to burn and a hard hit can drop the whole roof) and the player
+   gets one extra turd. Still a tough castle — just no longer a coin flip. ---- */
+(function(){
+  var gc = LEVELS[29];
+  if(!gc || gc.name !== 'Glass Castle') return;
+  for(var bi = 0; bi < gc.blocks.length; bi++){
+    if(gc.blocks[bi][2] === 360 && gc.blocks[bi][4] === 'stone') gc.blocks[bi][4] = 'wood';
+  }
+  gc.turds.push('normal');
 })();
 
 /* ---- World 2: Levels 51-100, out in space. Fifty more forts on five
@@ -759,12 +795,15 @@ var W2_NAMES = [
     return topY + 22;
   }
   function matsFor(wi, base){
-    /* space forts are built tough, and tougher the deeper in you go */
+    /* space forts are built tough, and tougher the deeper in you go —
+       World 2 is noticeably stonier than World 1 from the very first level */
     var mats = base.slice();
-    if(wi > 8 && mats[0] === 'wood') mats[0] = 'stone';
-    if(wi > 18 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'stone';
-    if(wi > 28 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
-    if(wi > 38) mats = mats.map(function(m){ return m === 'glass' ? 'wood' : m; });
+    if(wi > 3 && mats[0] === 'wood') mats[0] = 'stone';
+    if(wi > 10 && mats.length > 1 && mats[1] === 'glass') mats[1] = 'stone';
+    if(wi > 18 && mats.length > 2 && mats[2] === 'wood') mats[2] = 'stone';
+    if(wi > 26 && mats.length > 1 && mats[1] === 'wood') mats[1] = 'stone';
+    if(wi > 34) mats = mats.map(function(m){ return m === 'glass' ? 'stone' : m; });
+    if(wi > 44) mats = mats.map(function(m){ return m === 'wood' ? 'stone' : m; });
     return mats;
   }
   function makeTurds2(wi){
@@ -778,12 +817,12 @@ var W2_NAMES = [
   for(var wi = 0; wi < W2_NAMES.length; wi++){
     var blocks = [], people = [];
     var t = wi % 7;
-    var boost = wi >= 25 ? 1 : 0;
+    var boost = wi >= 40 ? 2 : (wi >= 20 ? 1 : 0);
     var turds = makeTurds2(wi);
     if(t === 0){
       /* Single tower, taller than anything in World 1 */
       var x0 = 900 + ((wi % 3) - 1) * 50;
-      var h0 = 3 + (wi % 2) + boost;
+      var h0 = 4 + (wi % 2) + boost;
       var top0 = stack(blocks, x0, h0, matsFor(wi, ['stone','wood','glass','stone','wood']));
       var roof0 = beam(blocks, x0, top0, 200, wi > 20 ? 'stone' : 'wood');
       people.push([x0, roof0]);
@@ -792,7 +831,7 @@ var W2_NAMES = [
     } else if(t === 1){
       /* Two towers + bridge */
       var ax = 840, bx = 1050;
-      var ha = 3, hb = 3 + (wi % 2);
+      var ha = 3 + (boost > 0 ? 1 : 0), hb = 3 + (wi % 2) + (boost > 0 ? 1 : 0);
       var ta = stack(blocks, ax, ha, matsFor(wi, ['stone','wood','wood','glass']));
       var tb = stack(blocks, bx, hb, matsFor(wi, ['stone','stone','wood','wood']));
       var bridgeTop = Math.max(ta, tb);
@@ -825,7 +864,7 @@ var W2_NAMES = [
     } else if(t === 4){
       /* Triple towers */
       var xs = [790, 935, 1080];
-      var hs = [3, 4, 3];
+      var hs = [3 + (boost > 0 ? 1 : 0), 4 + (boost > 1 ? 1 : 0), 3 + (boost > 0 ? 1 : 0)];
       for(var xi = 0; xi < 3; xi++){
         var xt = stack(blocks, xs[xi], hs[xi], matsFor(wi, ['wood','stone','glass','wood']));
         var xr = beam(blocks, xs[xi], xt, 150, 'wood');
@@ -857,13 +896,54 @@ var W2_NAMES = [
       var bt3 = beam(blocks, bx2, bt2 + 76, 170, 'wood');
       people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt3]); people.push([bx2 + 190]);
     }
-    /* space crowds: more people the deeper into World 2 you go */
+    /* space crowds: more people the deeper into World 2 you go (capped by
+       the number of distinct crowd spots, so nobody stacks on a twin) */
     var extra = 2 + Math.floor(wi / 10);
-    var spots = [706, 1214, 664, 1248, 736];
+    var spots = [706, 1214, 664, 1248, 736, 1196];
     for(var ei = 0; ei < extra; ei++) people.push([spots[ei % spots.length]]);
     LEVELS.push(L(turds, blocks, people, W2_NAMES[wi]));
   }
 })();
+
+/* ---- Level 100 · Final Frontier Flush: the finale replaces the generated
+   fort with a hand-built monster — the tallest fort in the game, two
+   six-high towers and a five-high keep, built almost entirely of stone,
+   crowded with twelve people (several of them pacing at top speed thanks to
+   the mover ramp in buildLevel). It takes near-perfect shots to clear, and
+   the Toilet Paper Roll — earned by reaching this level and appended as the
+   last shot in buildLevel — is the key to cracking it open. Hard, but the
+   Bomb and TP bursts plus tower collapses make it genuinely beatable. ---- */
+LEVELS[99] = L(
+  ['normal','normal','fire','chonk','ice','bouncy','bomb','chonk','normal'],
+  [
+    /* left tower, six high, nearly all stone */
+    [790, 38, 76, 76, 'stone'], [790, 114, 76, 76, 'stone'], [790, 190, 76, 76, 'wood'],
+    [790, 266, 76, 76, 'stone'], [790, 342, 76, 76, 'wood'], [790, 418, 76, 76, 'stone'],
+    /* right tower, six high, nearly all stone */
+    [1100, 38, 76, 76, 'stone'], [1100, 114, 76, 76, 'wood'], [1100, 190, 76, 76, 'stone'],
+    [1100, 266, 76, 76, 'stone'], [1100, 342, 76, 76, 'wood'], [1100, 418, 76, 76, 'stone'],
+    /* centre keep, five high */
+    [945, 38, 76, 76, 'stone'], [945, 114, 76, 76, 'stone'], [945, 190, 76, 76, 'wood'],
+    [945, 266, 76, 76, 'stone'], [945, 342, 76, 76, 'stone'],
+    /* the great stone roof beam across all three */
+    [945, 467, 340, 22, 'stone'],
+    /* the crown keep on top */
+    [945, 516, 76, 76, 'stone'],
+    [945, 565, 170, 22, 'wood'],
+    /* side outposts */
+    [676, 38, 76, 76, 'stone'],
+    [1214, 38, 76, 76, 'stone']
+  ],
+  [
+    [945, 576],            /* on the very top — the smuggest person in space */
+    [820, 478], [1010, 478], [1070, 478], /* pacing the great roof */
+    [676, 76], [1214, 76],   /* on the outposts */
+    [867], [1023],           /* in the gaps between the towers */
+    [735], [1157],           /* at the tower feet */
+    [600], [548]             /* out on the plain */
+  ],
+  'Final Frontier Flush'
+);
 
 var MAT = {
   glass: { hp: 22,  score: 100, fill: '#bfe8f2', edge: '#7fc3d8' },
@@ -871,11 +951,34 @@ var MAT = {
   stone: { hp: 120, score: 300, fill: '#9a97a3', edge: '#6e6a78' }
 };
 var TURD = {
-  normal:   { r: 21, mass: 1.0,  dmg: 1.0, emoji: '💩' },
-  chonk:    { r: 30, mass: 2.2,  dmg: 1.9, emoji: '💩' },
-  squirter: { r: 23, mass: 1.15, dmg: 1.1, emoji: '💩' },
-  mega:     { r: 35, mass: 3.1,  dmg: 2.6, emoji: '💩' }
+  normal:   { r: 21, mass: 1.0,  dmg: 1.0,  grav: 1.0,  emoji: '💩' },
+  chonk:    { r: 30, mass: 2.2,  dmg: 1.9,  grav: 1.0,  emoji: '💩' },
+  squirter: { r: 23, mass: 1.15, dmg: 1.1,  grav: 1.0,  emoji: '💩' },
+  mega:     { r: 35, mass: 3.1,  dmg: 2.6,  grav: 1.0,  emoji: '💩' },
+  fire:     { r: 22, mass: 1.1,  dmg: 1.05, grav: 1.0,  emoji: '🔥' },
+  ice:      { r: 22, mass: 1.0,  dmg: 0.95, grav: 1.0,  emoji: '🧊' },
+  bouncy:   { r: 21, mass: 0.95, dmg: 0.9,  grav: 1.0,  emoji: '🏀' },
+  bomb:     { r: 24, mass: 1.5,  dmg: 1.2,  grav: 1.15, emoji: '💣' },
+  tp:       { r: 32, mass: 3.4,  dmg: 2.2,  grav: 1.25, emoji: '🧻' }
 };
+/* The special turds are earned by reaching a level (0-based index here):
+   Fire at Level 15, Ice at Level 30, Bouncy at Level 55, Bomb at Level 75,
+   and the Toilet Paper Roll at Level 100 — where it is the last shot of the
+   final level. The Whole Game purchase, EVERY26 and the TURD26 trial count
+   as owning every one of them, on any level. */
+var TURD_UNLOCK = { fire: 14, ice: 29, bouncy: 54, bomb: 74, tp: 99 };
+var TURD_INFO = {
+  fire:   { name: 'Fire Turd',        desc: 'Sets nearby wood ablaze — it burns away in seconds.' },
+  ice:    { name: 'Ice Turd',         desc: 'Freezes an area: frozen blocks shatter on the next hit, frozen people stop still.' },
+  bouncy: { name: 'Bouncy Turd',      desc: 'Ricochets off blocks and the ground — one shot, many hits.' },
+  bomb:   { name: 'Bomb Turd',        desc: 'Explodes on impact, blasting blocks and people in a wide radius.' },
+  tp:     { name: 'Toilet Paper Roll', desc: 'Big and heavy — unrolls in a wide burst that flattens a whole cluster.' }
+};
+function turdUnlocked(type){
+  if(TURD_UNLOCK[type] === undefined) return true;
+  if(state.masterUnlocked || state.turd26Active) return true;
+  return state.unlocked > TURD_UNLOCK[type];
+}
 
 /* ============================== level build ============================== */
 function buildLevel(idx){
@@ -884,7 +987,8 @@ function buildLevel(idx){
     return {
       id: i, x: b[0], y: GROUND - b[1], w: b[2], h: b[3], mat: b[4],
       hp: MAT[b[4]].hp, maxhp: MAT[b[4]].hp,
-      vx: 0, vy: 0, angle: 0, va: 0, dead: false, settled: true, hitFlash: 0
+      vx: 0, vy: 0, angle: 0, va: 0, dead: false, settled: true, hitFlash: 0,
+      burn: 0, frozen: false
     };
   });
   /* Effective turds: from Level 38 on (about 3/4 through World 1) the
@@ -894,17 +998,39 @@ function buildLevel(idx){
   if(idx >= 37 && state.levelTurds.length >= 2){
     state.levelTurds[1] = 'squirter';
   }
+  /* Earned special turds join the rotation: each one takes over a plain
+     slot (never the opener) so the shot count stays the same. Once earned
+     they are yours on every level; the Whole Game purchase, EVERY26 and an
+     active TURD26 trial count as owning all of them (see turdUnlocked). */
+  ['fire', 'ice', 'bouncy', 'bomb'].forEach(function(sp){
+    if(!turdUnlocked(sp) || state.levelTurds.indexOf(sp) >= 0) return;
+    for(var si2 = state.levelTurds.length - 1; si2 >= 1; si2--){
+      if(state.levelTurds[si2] === 'normal'){ state.levelTurds[si2] = sp; return; }
+    }
+    /* no plain slot left: owners of the full unlock still get every type */
+    if(state.masterUnlocked || state.turd26Active) state.levelTurds.push(sp);
+  });
   if((state.masterUnlocked || state.turd26Active) && state.levelTurds.indexOf('mega') < 0 && state.levelTurds.length >= 2){
-    var mi = state.levelTurds.length - 1;
-    if(state.levelTurds[mi] === 'squirter') mi = state.levelTurds.length - 2;
-    state.levelTurds[mi] = 'mega';
+    /* Mega takes a plain slot too, so it never eats a special turd */
+    var mi = -1;
+    for(var mj = state.levelTurds.length - 1; mj >= 1; mj--){
+      if(state.levelTurds[mj] === 'normal'){ mi = mj; break; }
+    }
+    if(mi >= 0) state.levelTurds[mi] = 'mega';
+    else state.levelTurds.push('mega');
+  }
+  /* The Toilet Paper Roll rides as the LAST shot whenever it is owned —
+     on Level 100 it is earned just by reaching the level, which makes it
+     the final-level weapon the finale is built around. */
+  if(turdUnlocked('tp') && state.levelTurds.indexOf('tp') < 0){
+    state.levelTurds.push('tp');
   }
   state.people = def.people.map(function(p, i){
     var feetY = (p.length > 1) ? GROUND - p[1] : GROUND;
     return {
       id: i, x: p[0], y: feetY, w: 30, h: 56,
       vx: 0, vy: 0, dead: false, skin: SKIN[i % SKIN.length], shirt: SHIRT[i % SHIRT.length],
-      fallStart: null, blink: Math.random() * 3, panic: 0, splatT: 0,
+      fallStart: null, blink: Math.random() * 3, panic: 0, splatT: 0, freezeT: 0,
       mover: false, homeX: p[0], homeY: feetY, range: 0, speed: 1, phase: 0, facing: 1
     };
   });
@@ -917,10 +1043,10 @@ function buildLevel(idx){
       var onGround = (p.homeY === GROUND);
       var want = onGround ? (i % 2 === 0 || idx >= 9) : (i % 2 === 0);
       if(!want) return;
-      if(onGround && groundPacers >= 2 + Math.floor(idx / 16)) return;
+      if(onGround && groundPacers >= 2 + Math.floor(idx / 12)) return;
       p.mover = true;
-      p.range = onGround ? (62 + (idx % 3) * 12 + Math.min(26, idx * 0.45)) : 30;
-      p.speed = 0.9 + (idx % 5) * 0.12 + i * 0.07 + Math.min(0.55, idx * 0.009);
+      p.range = onGround ? (80 + (idx % 3) * 14 + Math.min(48, idx * 0.75)) : 34;
+      p.speed = 1.0 + (idx % 5) * 0.13 + i * 0.06 + Math.min(1.0, idx * 0.013);
       p.phase = i * 1.9 + idx * 0.7;
       if(onGround) groundPacers++;
     });
@@ -928,8 +1054,8 @@ function buildLevel(idx){
     if(!state.people.some(function(p){ return p.mover; }) && state.people.length){
       var lastP = state.people[state.people.length - 1];
       lastP.mover = true;
-      lastP.range = (lastP.homeY === GROUND) ? 66 : 26;
-      lastP.speed = 1.05;
+      lastP.range = (lastP.homeY === GROUND) ? 84 : 30;
+      lastP.speed = 1.15 + Math.min(0.6, idx * 0.008);
       lastP.phase = idx * 0.7;
     }
   }
@@ -952,7 +1078,8 @@ function loadTurd(){
   var type = list[state.turdIndex];
   state.projectile = {
     type: type, r: TURD[type].r, x: SLING_X, y: SLING_Y,
-    vx: 0, vy: 0, flying: false, boosted: false, dropped: false, rest: false, restT: 0, trail: []
+    vx: 0, vy: 0, flying: false, boosted: false, dropped: false, rest: false, restT: 0, trail: [],
+    specialUsed: false, gone: false, bounces: 0
   };
   sfx.load();
 }
@@ -976,12 +1103,14 @@ function updateHUD(){
   q.title = (state.masterUnlocked || state.turd26Active) ? 'Turds remaining — Mega unlocked!' : 'Turds remaining';
   list.forEach(function(t, i){
     var s = document.createElement('span');
-    s.textContent = '💩';
+    s.textContent = TURD[t].emoji;
     if(i < state.turdIndex) s.className = 'used';
     else if(i === state.turdIndex) s.className = 'next';
-    if(t === 'chonk') s.style.fontSize = '1.45em';
+    if(t === 'chonk'){ s.style.fontSize = '1.45em'; s.title = 'Chonk — big, heavy, hits twice as hard'; }
     if(t === 'squirter'){ s.style.fontSize = '1.32em'; s.title = 'Diarrhea Dropper — tap again mid-flight to drop a splat'; }
-    if(t === 'mega'){ s.style.fontSize = '1.7em'; s.title = 'Mega turd'; }
+    if(t === 'mega'){ s.style.fontSize = '1.7em'; s.title = 'Mega turd — the biggest splat of all'; }
+    if(TURD_INFO[t]){ s.style.fontSize = '1.3em'; s.title = TURD_INFO[t].name + ' — ' + TURD_INFO[t].desc; }
+    if(t === 'tp') s.style.fontSize = '1.45em';
     q.appendChild(s);
   });
 }
@@ -1028,7 +1157,9 @@ function circleBox(cx, cy, r, b){
 }
 function damageBlock(b, dmg, hx, hy){
   if(b.dead) return;
-  b.hp -= dmg;
+  /* a frozen block is brittle: the next hit of any size shatters it outright */
+  if(b.frozen && dmg > 0){ b.frozen = false; b.hp = 0; }
+  else b.hp -= dmg;
   b.hitFlash = 0.12;
   b.settled = false;
   if(b.hp <= 0){
@@ -1057,6 +1188,92 @@ function splatPerson(p, cause){
   state.shake = Math.max(state.shake, 7);
   updateHUD();
 }
+/* ============================== special turd effects ==============================
+   Fire, Ice, Bomb and the Toilet Paper Roll go off on the projectile's FIRST
+   solid contact — a block, a person, or the ground. Fire and Ice leave the
+   turd flying on afterwards; the Bomb and the TP roll are spent in the blast.
+   Block ranges are measured to the block's nearest point, not its centre,
+   so a wide beam caught edge-on still counts. */
+function blockDist(b, x, y){
+  var dx = Math.max(Math.abs(b.x - x) - b.w / 2, 0);
+  var dy = Math.max(Math.abs(b.y - y) - b.h / 2, 0);
+  return Math.hypot(dx, dy);
+}
+function triggerSpecial(pr, x, y){
+  if(pr.specialUsed) return;
+  if(pr.type === 'fire'){
+    pr.specialUsed = true;
+    var lit = 0;
+    state.blocks.forEach(function(b){
+      if(b.dead || b.mat !== 'wood') return;
+      if(blockDist(b, x, y) < 118){ b.burn = 3.2; lit++; }
+    });
+    burst(x, y, 16, ['#ff9d3c', '#e05a1e', '#ffd94d'], 300, 0.6, 300, 6);
+    tone(200, 90, 0.3, 'sawtooth', 0.10); noiseBurst(0.3, 800, 0.16);
+    addText(x, y - 44, lit > 0 ? 'FIRE! 🔥' : 'FIZZLE…', '#ff9d3c', 24);
+    state.shake = Math.max(state.shake, 4);
+  } else if(pr.type === 'ice'){
+    pr.specialUsed = true;
+    var froze = 0;
+    state.blocks.forEach(function(b){
+      if(b.dead) return;
+      if(blockDist(b, x, y) < 112){ b.frozen = true; froze++; }
+    });
+    state.people.forEach(function(p){
+      if(p.dead) return;
+      if(Math.hypot(p.x - x, (p.y - p.h / 2) - y) < 118){ p.freezeT = 3; froze++; }
+    });
+    burst(x, y, 18, ['#bfe8f2', '#dff6fb', '#ffffff'], 280, 0.6, 200, 5);
+    tone(1200, 1800, 0.18, 'sine', 0.08); tone(900, 1400, 0.22, 'sine', 0.06, 0.05);
+    addText(x, y - 44, froze > 0 ? 'FREEZE! ❄️' : 'CHILLY…', '#7fc3d8', 24);
+    state.shake = Math.max(state.shake, 3);
+  } else if(pr.type === 'bomb'){
+    pr.specialUsed = true;
+    explodeAt(x, y, 138, 175, 300);
+    pr.gone = true; pr.rest = true; pr.restT = 0;
+  } else if(pr.type === 'tp'){
+    pr.specialUsed = true;
+    explodeAt(x, y, 180, 110, 560, true);
+    pr.gone = true; pr.rest = true; pr.restT = 0;
+  }
+}
+/* Shared blast for the Bomb Turd and the TP roll's unroll burst: radial
+   damage with falloff, people in the radius are flattened, and blocks get
+   shoved away hard enough to bring towers down. */
+function explodeAt(x, y, radius, maxDmg, push, isPaper){
+  state.blocks.forEach(function(b){
+    if(b.dead) return;
+    var d = Math.hypot(b.x - x, b.y - y);
+    if(d > radius + Math.max(b.w, b.h) / 2) return;
+    var f = Math.max(0, 1 - d / (radius + 40));
+    damageBlock(b, maxDmg * (0.3 + 0.7 * f), b.x, b.y);
+    if(!b.dead){
+      var ang = Math.atan2(b.y - y, b.x - x);
+      b.vx += Math.cos(ang) * push * f;
+      b.vy += Math.sin(ang) * push * f * 0.5 - 240 * f;
+      b.va += (Math.random() - 0.5) * 0.9 * f;
+      b.settled = false;
+    }
+  });
+  state.people.forEach(function(p){
+    if(p.dead) return;
+    if(Math.hypot(p.x - x, (p.y - p.h / 2) - y) < radius) splatPerson(p, 'direct');
+  });
+  if(isPaper){
+    burst(x, y, 30, ['#ffffff', '#f2ead8', '#e8e2d2'], 460, 0.9, 500, 7);
+    burst(x, y, 12, SPLAT_COLORS, 300, 0.7, 650, 6);
+    tone(300, 70, 0.35, 'sine', 0.20); noiseBurst(0.35, 500, 0.26);
+    addText(x, y - 54, 'UNROLLED! 🧻', '#ffffff', 28);
+    state.shake = Math.max(state.shake, 10);
+  } else {
+    burst(x, y, 30, ['#ffd94d', '#ff9d3c', '#e0483e', '#5a4632'], 520, 0.8, 500, 8);
+    puff(x, y - 10, 7);
+    tone(140, 40, 0.45, 'sine', 0.24); noiseBurst(0.4, 350, 0.3);
+    addText(x, y - 54, 'BOOM! 💣', '#ffd94d', 28);
+    state.shake = Math.max(state.shake, 12);
+  }
+}
+
 function supportFor(e){
   /* returns top surface y under entity feet, or null */
   var feet = e.y, best = null;
@@ -1078,7 +1295,7 @@ function step(dt){
 
   /* ---- projectile ---- */
   if(pr && pr.flying && !pr.rest){
-    pr.vy += GRAV * dt;
+    pr.vy += GRAV * (TURD[pr.type].grav || 1) * dt;
     pr.x += pr.vx * dt;
     pr.y += pr.vy * dt;
     pr.trail.push({ x: pr.x, y: pr.y, t: 0 });
@@ -1098,7 +1315,9 @@ function step(dt){
         b.vy += pr.vy * 0.10;
         b.va += (pr.x - b.x) * 0.0006 * spd * 0.02;
         b.settled = false;
-        /* bounce projectile away */
+        /* bounce projectile away — the Bouncy Turd keeps most of its speed
+           and ricochets on instead of splatting, so one shot can tag
+           several spots before it runs out of spring */
         var d = Math.sqrt(c.d2) || 1;
         var nx = c.dx / d, ny = c.dy / d;
         if(d < 0.01){ nx = 0; ny = -1; }
@@ -1106,33 +1325,59 @@ function step(dt){
         pr.y = c.ny + ny * (pr.r + 1);
         var vn = pr.vx * nx + pr.vy * ny;
         if(vn < 0){
-          pr.vx -= (1.45) * vn * nx;
-          pr.vy -= (1.45) * vn * ny;
-          pr.vx *= 0.72; pr.vy *= 0.72;
+          if(pr.type === 'bouncy'){
+            pr.vx -= 1.84 * vn * nx;
+            pr.vy -= 1.84 * vn * ny;
+            pr.vx *= 0.96; pr.vy *= 0.96;
+            pr.bounces++;
+            tone(500 + pr.bounces * 60, 800 + pr.bounces * 60, 0.09, 'sine', 0.07);
+          } else {
+            pr.vx -= (1.45) * vn * nx;
+            pr.vy -= (1.45) * vn * ny;
+            pr.vx *= 0.72; pr.vy *= 0.72;
+          }
         }
+        triggerSpecial(pr, pr.x, pr.y);
+        if(pr.gone) break;
         if(spd > 260){ sfx.thud(); burst(pr.x, pr.y, 6, SPLAT_COLORS, 200, 0.5, 700, 5); }
       }
     }
     /* people: direct hit */
     for(var j = 0; j < state.people.length; j++){
       var p = state.people[j];
-      if(p.dead) continue;
+      if(p.dead || pr.gone) continue;
       var cx = Math.max(p.x - p.w / 2, Math.min(pr.x, p.x + p.w / 2));
       var cy = Math.max(p.y - p.h, Math.min(pr.y, p.y));
       var dx = pr.x - cx, dy = pr.y - cy;
       if(dx * dx + dy * dy < pr.r * pr.r){
         splatPerson(p, 'direct');
+        /* the TP roll ploughs straight through people — it only unrolls
+           when it hits a block or the ground, so one person standing in
+           front of the fort can't waste the burst */
+        if(pr.type !== 'tp') triggerSpecial(pr, pr.x, pr.y);
+        if(pr.gone) break;
         pr.vx *= 0.55; pr.vy *= 0.4;
         burst(pr.x, pr.y, 10, SPLAT_COLORS, 280, 0.7, 700, 7);
       }
     }
     /* ground / walls */
-    if(pr.y + pr.r > GROUND){
+    if(!pr.gone && pr.y + pr.r > GROUND){
       pr.y = GROUND - pr.r;
-      if(Math.abs(pr.vy) > 200){ sfx.splat(); burst(pr.x, GROUND - 4, 12, SPLAT_COLORS, 260, 0.7, 650, 7); }
-      pr.vy = -pr.vy * 0.28;
-      pr.vx *= 0.62;
-      if(Math.hypot(pr.vx, pr.vy) < 95){ pr.rest = true; pr.restT = 0; sfx.splat(); burst(pr.x, pr.y, 10, SPLAT_COLORS, 200, 0.6, 600, 6); }
+      triggerSpecial(pr, pr.x, GROUND - 6);
+      if(!pr.gone){
+        if(pr.type === 'bouncy'){
+          if(Math.abs(pr.vy) > 160){ tone(420, 760, 0.09, 'sine', 0.07); burst(pr.x, GROUND - 4, 5, SPLAT_COLORS, 160, 0.4, 600, 4); }
+          pr.vy = -pr.vy * 0.8;
+          pr.vx *= 0.94;
+          pr.bounces++;
+          if(Math.hypot(pr.vx, pr.vy) < 70){ pr.rest = true; pr.restT = 0; sfx.splat(); burst(pr.x, pr.y, 10, SPLAT_COLORS, 200, 0.6, 600, 6); }
+        } else {
+          if(Math.abs(pr.vy) > 200){ sfx.splat(); burst(pr.x, GROUND - 4, 12, SPLAT_COLORS, 260, 0.7, 650, 7); }
+          pr.vy = -pr.vy * 0.28;
+          pr.vx *= 0.62;
+          if(Math.hypot(pr.vx, pr.vy) < 95){ pr.rest = true; pr.restT = 0; sfx.splat(); burst(pr.x, pr.y, 10, SPLAT_COLORS, 200, 0.6, 600, 6); }
+        }
+      }
     }
     if(pr.x - pr.r < 0){ pr.x = pr.r; pr.vx = Math.abs(pr.vx) * 0.4; }
     if(pr.x + pr.r > W){ pr.x = W - pr.r; pr.vx = -Math.abs(pr.vx) * 0.4; }
@@ -1177,6 +1422,22 @@ function step(dt){
   }
   if(pr && pr.rest) pr.restT += dt;
   state.people.forEach(function(p){ if(!p.dead && pr && pr.flying) p.panic = 1; else if(p.panic > 0) p.panic = Math.max(0, p.panic - dt * 0.5); });
+
+  /* ---- burning blocks: fire eats through wood over a few seconds ---- */
+  state.blocks.forEach(function(b){
+    if(b.dead || b.burn <= 0) return;
+    b.burn -= dt;
+    damageBlock(b, 34 * dt, b.x, b.y);
+    if(!b.dead && Math.random() < 0.35){
+      state.particles.push({
+        x: b.x + (Math.random() - 0.5) * b.w * 0.7, y: b.y - b.h / 2 + Math.random() * 8,
+        vx: (Math.random() - 0.5) * 30, vy: -70 - Math.random() * 60,
+        t: 0, life: 0.45 + Math.random() * 0.3,
+        color: ['#ff9d3c', '#e05a1e', '#ffd94d'][Math.floor(Math.random() * 3)],
+        grav: -160, size: 5 + Math.random() * 5, puff: false
+      });
+    }
+  });
 
   /* ---- blocks physics ---- */
   /* settled blocks lose support when whatever is under them goes away */
@@ -1253,10 +1514,12 @@ function step(dt){
   state.people.forEach(function(p){
     if(p.dead){ p.splatT += dt; return; }
     p.blink += dt;
+    /* a frozen person stands stock-still until the ice wears off */
+    if(p.freezeT > 0) p.freezeT -= dt;
     /* pacers stroll back and forth while they still have footing — and they
        check the next step, so a perch pacer shuffles on its beam instead of
        strolling off the edge and splatting itself */
-    if(p.mover && p.fallStart === null){
+    if(p.mover && p.fallStart === null && p.freezeT <= 0){
       var nx2 = p.homeX + Math.sin(state.time * p.speed + p.phase) * p.range;
       var keepX = p.x;
       p.x = nx2;
@@ -1523,6 +1786,24 @@ function drawPoop(x, y, r, angry, kind){
     layers[1].top = '#8f8a30'; layers[1].bot = '#5d571c';
     layers[2].top = '#a39c3a'; layers[2].bot = '#6e6624';
   }
+  if(kind === 'fire'){
+    /* the Fire Turd: molten orange swirls */
+    layers[0].top = '#e88a3a'; layers[0].bot = '#a83e12';
+    layers[1].top = '#f29c3f'; layers[1].bot = '#bc4a16';
+    layers[2].top = '#ffb35c'; layers[2].bot = '#d95f1e';
+  }
+  if(kind === 'ice'){
+    /* the Ice Turd: pale frosty-blue swirls */
+    layers[0].top = '#a8dcef'; layers[0].bot = '#5f9ec4';
+    layers[1].top = '#c4ecfa'; layers[1].bot = '#74b2d4';
+    layers[2].top = '#e8faff'; layers[2].bot = '#8fc3e2';
+  }
+  if(kind === 'bomb'){
+    /* the Bomb Turd: charcoal-black swirls */
+    layers[0].top = '#5a5a64'; layers[0].bot = '#26262e';
+    layers[1].top = '#6a6a74'; layers[1].bot = '#32323c';
+    layers[2].top = '#7d7d88'; layers[2].bot = '#40404a';
+  }
   layers.forEach(function(L){
     var g = ctx.createLinearGradient(0, L.cy - L.h, 0, L.cy + L.h);
     g.addColorStop(0, L.top); g.addColorStop(1, L.bot);
@@ -1551,6 +1832,42 @@ function drawPoop(x, y, r, angry, kind){
     ctx.ellipse(1, 19.5, 3, 5.6, 0, 0, Math.PI * 2);
     ctx.ellipse(10, 16.5, 2.4, 4, 0, 0, Math.PI * 2);
     ctx.fill();
+  }
+  if(kind === 'fire'){
+    /* flames licking off the top, flickering with the clock */
+    var fl = 1 + Math.sin(state.time * 17) * 0.18;
+    ctx.fillStyle = '#e05a1e';
+    ctx.beginPath(); ctx.ellipse(-4, -20 * fl + 2, 4.6, 7.5 * fl, -0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff9d3c';
+    ctx.beginPath(); ctx.ellipse(3.5, -19 * fl + 2, 3.8, 6 * fl, 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd94d';
+    ctx.beginPath(); ctx.ellipse(0, -17.5 * fl + 2, 2.2, 3.6 * fl, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  if(kind === 'bomb'){
+    /* a lit fuse sparking on top */
+    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(1.5, -16); ctx.quadraticCurveTo(5, -21, 8.5, -20); ctx.stroke();
+    var spk = 2 + Math.random() * 2.4;
+    ctx.strokeStyle = '#ffd94d'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(8.5 - spk, -20); ctx.lineTo(8.5 + spk, -20);
+    ctx.moveTo(8.5, -20 - spk); ctx.lineTo(8.5, -20 + spk);
+    ctx.stroke();
+  }
+  if(kind === 'ice'){
+    /* a snowflake badge on the brow */
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-15, -13); ctx.lineTo(-7, -13);
+    ctx.moveTo(-11, -17); ctx.lineTo(-11, -9);
+    ctx.moveTo(-14, -16); ctx.lineTo(-8, -10);
+    ctx.moveTo(-14, -10); ctx.lineTo(-8, -16);
+    ctx.stroke();
+  }
+  if(kind === 'bouncy'){
+    /* a bright elastic band around the middle — this one is spring-loaded */
+    ctx.strokeStyle = '#e0483e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.ellipse(0, 1.5, 16.2, 9.7, 0, Math.PI * 0.12, Math.PI * 0.88); ctx.stroke();
   }
   /* eyes */
   ctx.fillStyle = '#fff';
@@ -1592,6 +1909,41 @@ function drawPoop(x, y, r, angry, kind){
     ctx.fillStyle = '#26221c';
     ctx.beginPath(); ctx.arc(fx, fy, 2.3, 0, Math.PI * 2); ctx.fill();
   }
+}
+function drawTPRoll(x, y, r){
+  /* The Toilet Paper Roll: a big white roll with spiral windings, a
+     cardboard core, and a loose sheet streaming behind it as it flies. */
+  ctx.save();
+  ctx.translate(x, y);
+  var u = r / 30;
+  ctx.scale(u, u);
+  ctx.fillStyle = '#f7f2e4';
+  ctx.beginPath();
+  ctx.moveTo(-22, 0);
+  ctx.quadraticCurveTo(-38, 6 + Math.sin(state.time * 9) * 3, -35, 19);
+  ctx.quadraticCurveTo(-25, 13, -17, 7);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,110,90,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+  var rg = ctx.createRadialGradient(-9, -9, 4, 0, 0, 30);
+  rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.75, '#f2ecdc'); rg.addColorStop(1, '#d9d2ba');
+  ctx.fillStyle = rg;
+  ctx.beginPath(); ctx.arc(0, 0, 29, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,110,90,0.55)'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.strokeStyle = 'rgba(150,140,115,0.5)'; ctx.lineWidth = 1.3;
+  [22, 16.5, 11.5].forEach(function(rr){
+    ctx.beginPath(); ctx.arc(0, 0, rr, 0.4, Math.PI * 1.7); ctx.stroke();
+  });
+  /* cardboard core */
+  ctx.fillStyle = '#b98a4a';
+  ctx.beginPath(); ctx.arc(0, 0, 7.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8a5f2c';
+  ctx.beginPath(); ctx.arc(0, 0, 4.2, 0, Math.PI * 2); ctx.fill();
+  /* a determined little face riding the rim */
+  ctx.fillStyle = '#2a1808';
+  ctx.beginPath(); ctx.arc(13, -8, 2, 0, Math.PI * 2); ctx.arc(21, -2, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2a1808'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(10, -13); ctx.lineTo(15.5, -10.5); ctx.stroke();
+  ctx.restore();
 }
 function drawPerson(p){
   var x = p.x, feet = p.y;
@@ -1759,6 +2111,25 @@ function drawPerson(p){
     ctx.stroke();
     ctx.beginPath(); ctx.arc(x, headY + 4.2, 4.8, 0.25, Math.PI - 0.25); ctx.stroke();
   }
+  if(p.freezeT > 0){
+    /* encased in ice: a pale frost block with a snowflake overhead — held
+       stock-still, and much easier to hit, until it thaws */
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, p.freezeT);
+    ctx.fillStyle = 'rgba(168,220,240,0.5)';
+    roundRect(x - 19, feet - p.h - 8, 38, p.h + 10, 8); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    roundRect(x - 19, feet - p.h - 8, 38, p.h + 10, 8); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+    var icy = feet - p.h - 20;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, icy); ctx.lineTo(x + 6, icy);
+    ctx.moveTo(x, icy - 6); ctx.lineTo(x, icy + 6);
+    ctx.moveTo(x - 4.5, icy - 4.5); ctx.lineTo(x + 4.5, icy + 4.5);
+    ctx.moveTo(x - 4.5, icy + 4.5); ctx.lineTo(x + 4.5, icy - 4.5);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 function roundRect(x, y, w, h, r){
   ctx.beginPath();
@@ -1907,6 +2278,35 @@ function drawBlock(b){
   if(b.hitFlash > 0){
     ctx.fillStyle = 'rgba(255,255,255,' + (b.hitFlash * 2.4) + ')';
     roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 4); ctx.fill();
+  }
+  if(b.frozen){
+    /* frozen solid: a frosty glaze and a snowflake — one more hit shatters it */
+    ctx.fillStyle = 'rgba(168,220,240,0.45)';
+    roundRect(-hw, -hh, b.w, b.h, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
+    roundRect(-hw + 2, -hh + 2, b.w - 4, b.h - 4, 3); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, -9); ctx.lineTo(0, 9);
+    ctx.moveTo(-8, -4.5); ctx.lineTo(8, 4.5);
+    ctx.moveTo(-8, 4.5); ctx.lineTo(8, -4.5);
+    ctx.stroke();
+  }
+  if(b.burn > 0){
+    /* on fire: flames licking off the top edge and a scorch wash, both
+       dying down as the burn timer runs out */
+    var bf = Math.min(1, b.burn / 1.2);
+    ctx.fillStyle = 'rgba(60,25,5,' + (0.22 + 0.1 * Math.sin(state.time * 11 + seed)) + ')';
+    roundRect(-hw, -hh, b.w, b.h, 4); ctx.fill();
+    for(var fi2 = 0; fi2 < 4; fi2++){
+      var fx3 = -hw + (fi2 + 0.5) * (b.w / 4) + Math.sin(state.time * 13 + fi2 * 2.1 + seed) * 2;
+      var fh = (10 + hash(seed + fi2 * 3) * 9) * bf * (1 + Math.sin(state.time * 15 + fi2) * 0.2);
+      if(fh < 1.5) continue;
+      ctx.fillStyle = fi2 % 2 ? '#e05a1e' : '#ff9d3c';
+      ctx.beginPath(); ctx.ellipse(fx3, -hh - fh * 0.4, 5.5, fh * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffd94d';
+      ctx.beginPath(); ctx.ellipse(fx3, -hh - fh * 0.25, 2.6, fh * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.restore();
 }
@@ -2321,7 +2721,8 @@ function draw(){
     ctx.fillStyle = 'rgba(70,45,20,0.55)';
     for(var ti = 0; ti < 26; ti++){
       var sdt = 0.055;
-      for(var s2 = 0; s2 < 3; s2++){ pvy += GRAV * sdt / 3; px += pvx * sdt / 3; py += pvy * sdt / 3; }
+      var pgrav = GRAV * (TURD[pr.type].grav || 1);
+      for(var s2 = 0; s2 < 3; s2++){ pvy += pgrav * sdt / 3; px += pvx * sdt / 3; py += pvy * sdt / 3; }
       if(py > GROUND) break;
       if(ti % 2 === 0){ ctx.beginPath(); ctx.arc(px, py, 5.5 - ti * 0.12, 0, Math.PI * 2); ctx.fill(); }
     }
@@ -2339,11 +2740,15 @@ function draw(){
     }
   }
 
-  /* stink trail: alternating brown droplets and green wisps */
+  /* stink trail: alternating brown droplets and green wisps — paper
+     streamers for the TP roll, embers for the Fire Turd, frost for Ice */
   if(pr && pr.flying){
     pr.trail.forEach(function(t, i){
       var f = i / pr.trail.length;
-      ctx.fillStyle = i % 3 === 2
+      if(pr.type === 'tp') ctx.fillStyle = 'rgba(247,242,228,' + f * 0.5 + ')';
+      else if(pr.type === 'fire') ctx.fillStyle = 'rgba(255,' + (120 + Math.floor(f * 60)) + ',40,' + f * 0.45 + ')';
+      else if(pr.type === 'ice') ctx.fillStyle = 'rgba(190,232,250,' + f * 0.45 + ')';
+      else ctx.fillStyle = i % 3 === 2
         ? 'rgba(140,160,80,' + f * 0.35 + ')'
         : 'rgba(110,72,34,' + f * 0.34 + ')';
       ctx.beginPath(); ctx.arc(t.x, t.y - (1 - f) * 4, pr.r * f * 0.8, 0, Math.PI * 2); ctx.fill();
@@ -2360,10 +2765,13 @@ function draw(){
       ctx.beginPath();
       ctx.ellipse(pr.x, GROUND + 5, pr.r * 1.3 * shScale + 4, 5.5 * shScale + 1.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.save();
-      if(pr.rest) ctx.globalAlpha = Math.max(0, 1.4 - pr.restT) / 1.4;
-      drawPoop(pr.x, pr.y, pr.r, true, pr.type);
-      ctx.restore();
+      if(!pr.gone){
+        ctx.save();
+        if(pr.rest) ctx.globalAlpha = Math.max(0, 1.4 - pr.restT) / 1.4;
+        if(pr.type === 'tp') drawTPRoll(pr.x, pr.y, pr.r);
+        else drawPoop(pr.x, pr.y, pr.r, true, pr.type);
+        ctx.restore();
+      }
       if(pr.flying && pr.type === 'squirter' && !pr.dropped){
         ctx.font = '600 15px Trebuchet MS, sans-serif';
         ctx.fillStyle = 'rgba(46,33,24,0.7)';
@@ -2430,7 +2838,10 @@ function draw(){
   if(pr && !pr.flying && state.mode !== 'won' && state.mode !== 'lost'){
     ctx.strokeStyle = '#b03a2a'; ctx.lineWidth = 6.5;
     ctx.beginPath(); ctx.moveTo(SLING_X - 12, SLING_Y + 6); ctx.lineTo(pr.x, pr.y); ctx.stroke();
-    if(!aiming) drawPoop(pr.x, pr.y, pr.r, true, pr.type);
+    if(!aiming){
+      if(pr.type === 'tp') drawTPRoll(pr.x, pr.y, pr.r);
+      else drawPoop(pr.x, pr.y, pr.r, true, pr.type);
+    }
   }
 
   /* particles: cloudy puffs, glossy droplets */
@@ -2694,8 +3105,13 @@ function startLevel(idx, resetTotal){
   hideOverlays();
   buildLevel(idx);
   updateHUD();
+  if(idx === 14) flashTip('New turd earned: the Fire Turd! 🔥 It sets nearby wood ablaze on impact — watch it burn away!');
+  if(idx === 29) flashTip('New turd earned: the Ice Turd! 🧊 Frozen blocks shatter on the next hit, and frozen people stop still!');
   if(idx === 37) flashTip('New turd earned: the Diarrhea Dropper! Launch it, then tap again mid-flight to drop a splat straight down! 💩');
   if(idx === 50) flashTip('Welcome to World 2 — space! A new planet every 10 levels. 🚀');
+  if(idx === 54) flashTip('New turd earned: the Bouncy Turd! 🏀 It ricochets off blocks and the ground — one shot, many hits!');
+  if(idx === 74) flashTip('New turd earned: the Bomb Turd! 💣 It explodes on impact — mind the blast radius!');
+  if(idx === 99) flashTip('Final level! The Toilet Paper Roll 🧻 is your last shot — it unrolls in a huge burst. Make it count!');
 }
 /* Full screen is a bonus behind its own button only. Nothing in the Start path
    may touch full screen or orientation: on real phones those calls can rotate
@@ -2944,7 +3360,42 @@ function hideLinks(sel, hide){
   var els = document.querySelectorAll(sel);
   for(var i = 0; i < els.length; i++) els[i].style.display = hide ? 'none' : '';
 }
+/* The arsenal panel on the start screen: every launchable with its name, a
+   one-line description of what it does, and how it is earned. Specials show
+   a lock until they are reached (or unlocked by purchase / promo). */
+function refreshArsenal(){
+  var box = document.getElementById('arsenalRows');
+  if(!box) return;
+  box.innerHTML = '';
+  var rows = [
+    { t: 'normal',   name: 'Regular Turd',      desc: 'The classic splat. Reliable, honest, smelly.', unlock: 'Yours from the start' },
+    { t: 'chonk',    name: 'Chonk',             desc: 'Big and heavy — hits about twice as hard.', unlock: 'In the rotation from Level 2' },
+    { t: 'squirter', name: 'Diarrhea Dropper',  desc: 'Tap again mid-flight to drop a splat straight down.', unlock: 'Earned at Level 38' },
+    { t: 'fire',     name: 'Fire Turd',         desc: TURD_INFO.fire.desc,   unlock: 'Earned at Level 15' },
+    { t: 'ice',      name: 'Ice Turd',          desc: TURD_INFO.ice.desc,    unlock: 'Earned at Level 30' },
+    { t: 'bouncy',   name: 'Bouncy Turd',       desc: TURD_INFO.bouncy.desc, unlock: 'Earned at Level 55' },
+    { t: 'bomb',     name: 'Bomb Turd',         desc: TURD_INFO.bomb.desc,   unlock: 'Earned at Level 75' },
+    { t: 'mega',     name: 'Mega Turd',         desc: 'The biggest splat of all — pure demolition.', unlock: 'Whole Game · EVERY26 · TURD26 trial' },
+    { t: 'tp',       name: 'Toilet Paper Roll', desc: TURD_INFO.tp.desc,     unlock: 'Earned at Level 100 — the final level\u2019s last shot' }
+  ];
+  rows.forEach(function(r){
+    var owned = r.t === 'mega' ? (state.masterUnlocked || state.turd26Active) : turdUnlocked(r.t);
+    var row = document.createElement('div');
+    row.className = 'arow' + (owned ? '' : ' locked');
+    var em = document.createElement('span'); em.className = 'aemoji'; em.textContent = TURD[r.t].emoji;
+    var tx = document.createElement('span');
+    var b = document.createElement('b'); b.textContent = r.name + ' — ';
+    tx.appendChild(b);
+    tx.appendChild(document.createTextNode(r.desc));
+    var un = document.createElement('span'); un.className = 'aunlock';
+    un.textContent = (owned ? '✓ ' : '🔒 ') + r.unlock;
+    tx.appendChild(un);
+    row.appendChild(em); row.appendChild(tx);
+    box.appendChild(row);
+  });
+}
 function refreshShop(){
+  refreshArsenal();
   var full = state.masterUnlocked;
   hideLinks('.buy-whole-link', full);
   hideLinks('.buy-half-link', full || state.halfPurchased || state.unlocked >= 50);
@@ -2966,7 +3417,7 @@ function grantWholeGame(){
   buildLevelGrid();
   refreshShop();
   if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
-  shopNote('Whole game unlocked! All 100 levels across both worlds + all turd types (Normal, Chonk & Mega) are open. 🎉🚀');
+  shopNote('Whole game unlocked! All 100 levels across both worlds + every turd type — Normal, Chonk, Diarrhea Dropper, Fire, Ice, Bouncy, Bomb, Mega and the Toilet Paper Roll — are open. 🎉🚀');
   flashTip('Whole game unlocked — everything is open! 🎉');
 }
 function grantHalf(){
@@ -3444,7 +3895,7 @@ state.mode = 'menu';
 handlePurchaseReturn();
 refreshShop();
 refreshTurd26Chip();
-if(state.masterUnlocked) promoMsg('Full access on this device — Mega turds unlocked! 🎉', true);
+if(state.masterUnlocked) promoMsg('Full access on this device — every turd type unlocked, Toilet Paper Roll included! 🎉', true);
 else if(state.turd26Active) promoMsg('TURD26 trial running — ' + turd26Clock(state.turd26Left) + ' of full unlock left. The clock only runs while you play! 🎉', true);
 initSocial();
 updateHUD();
