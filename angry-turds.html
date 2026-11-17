@@ -282,6 +282,11 @@
         border:1.5px solid var(--line); border-radius:14px; padding:10px 12px 8px; text-align:left;
         background:rgba(128,96,40,.06);
       }
+      .lb-panel-level{
+        border:2px solid #d9b96a; background:rgba(255,217,77,.14);
+        box-shadow:0 0 0 3px rgba(255,217,77,.12);
+      }
+      .lb-panel-level .lb-title{ font-size:1.02rem; }
       .lb-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
       .lb-title{ font-weight:800; font-size:.95rem; line-height:1.2; }
       .lb-refresh{
@@ -441,6 +446,11 @@
                 <button class="btn alt" data-name-save type="button">Save name</button>
               </div>
               <div class="promomsg" data-name-msg aria-live="polite"></div>
+            </div>
+            <div class="lb-panel lb-panel-level">
+              <div class="lb-head"><span class="lb-title" data-level-lb-title>🏆 Top scores — Level 1</span><button type="button" class="lb-refresh" data-level-lb-refresh>↻ Refresh</button></div>
+              <div data-level-lb-rows><div class="lb-empty">Loading scores…</div></div>
+              <div class="lb-status" data-level-lb-status aria-live="polite"></div>
             </div>
             <div class="lb-panel">
               <div class="lb-head"><span class="lb-title">🏆 Top flushers — live leaderboard</span><button type="button" class="lb-refresh" data-lb-refresh>↻ Refresh</button></div>
@@ -3174,6 +3184,112 @@ function maybeSubmitTotal(){
     fetchLeaderboard();
   }
 }
+
+/* ============================== per-level leaderboard ==============================
+   Alongside the career board above (which is unchanged): every level has
+   its own board at angryTurdsLevelScores/<level number 1-100> in the same
+   Firebase project. Entries are pushed as { name, score, date } and the
+   board shows each player's best score on that level, top 10. This device
+   remembers the best score it has posted per level
+   (at_submitted_level_best_<n>) and only posts when a finish beats it.
+   Everything fails soft and silent: a failed or offline post keeps the
+   local best and is retried on the next finish — the game never blocks and
+   no error is shown. */
+var levelLbList = null;   /* last fetched top-10 for the level on show (null = unavailable) */
+var levelLbLevel = 0;     /* 0-based level index the per-level board is showing */
+function levelBestLocal(levelIdx){
+  return state.bestScores[levelIdx] || 0;
+}
+function renderLevelLbRows(){
+  var titles = document.querySelectorAll('[data-level-lb-title]');
+  for(var t = 0; t < titles.length; t++) titles[t].textContent = '🏆 Top scores — Level ' + (levelLbLevel + 1);
+  var boxes = document.querySelectorAll('[data-level-lb-rows]');
+  for(var b = 0; b < boxes.length; b++){
+    var box = boxes[b];
+    box.innerHTML = '';
+    if(!levelLbList || !levelLbList.length){
+      var em = document.createElement('div');
+      em.className = 'lb-empty';
+      em.textContent = levelLbList
+        ? 'No scores on this level yet — set the first one!'
+        : ('Your best on this level: ' + levelBestLocal(levelLbLevel));
+      box.appendChild(em);
+      continue;
+    }
+    for(var i = 0; i < levelLbList.length; i++){
+      var e = levelLbList[i];
+      var row = document.createElement('div');
+      row.className = 'lb-row' + (playerName && e.name.toLowerCase() === playerName.toLowerCase() ? ' me' : '');
+      var rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = (i + 1) + '.';
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = e.name;
+      var sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = e.score;
+      var dt = document.createElement('span'); dt.className = 'dt'; dt.textContent = fmtDate(e.date);
+      row.appendChild(rk); row.appendChild(nm); row.appendChild(sc); row.appendChild(dt);
+      box.appendChild(row);
+    }
+  }
+}
+function levelLbFail(){
+  levelLbList = null;
+  renderLevelLbRows();
+  setAllText('[data-level-lb-status]', 'Live board unavailable — showing your best on this level.');
+}
+function fetchLevelLeaderboard(levelIdx){
+  levelLbLevel = levelIdx;
+  renderLevelLbRows();
+  if(!db){ levelLbFail(); return; }
+  setAllText('[data-level-lb-status]', 'Loading scores…');
+  var done = false;
+  var timer = setTimeout(function(){ if(!done){ done = true; levelLbFail(); } }, 9000);
+  db.ref('angryTurdsLevelScores/' + (levelIdx + 1)).once('value').then(function(snap){
+    if(done) return;
+    done = true; clearTimeout(timer);
+    var val = snap.val() || {};
+    var byName = {};
+    var keys = Object.keys(val);
+    for(var i = 0; i < keys.length; i++){
+      var e = val[keys[i]];
+      if(!e || typeof e.score !== 'number' || !isFinite(e.score)) continue;
+      var nm = String(e.name == null ? 'Player' : e.name).slice(0, 20);
+      if(!nm) nm = 'Player';
+      var key = nm.toLowerCase();
+      var clean = { name: nm, score: Math.max(0, Math.floor(e.score)), date: e.date || '' };
+      if(!byName[key] || clean.score > byName[key].score) byName[key] = clean;
+    }
+    var list = [];
+    for(var k in byName){ if(Object.prototype.hasOwnProperty.call(byName, k)) list.push(byName[k]); }
+    list.sort(function(a, b2){ return b2.score - a.score; });
+    levelLbList = list.slice(0, 10);
+    renderLevelLbRows();
+    setAllText('[data-level-lb-status]', levelLbList.length ? "Live board — every player's best score on this level." : 'No scores on this level yet — set the first one!');
+  }).catch(function(){
+    if(!done){ done = true; clearTimeout(timer); levelLbFail(); }
+  });
+}
+function submitLevelScore(levelIdx, score){
+  db.ref('angryTurdsLevelScores/' + (levelIdx + 1)).push({ name: playerName || 'Player', score: score, date: todayStr() }).then(function(){
+    /* Only now — the post landed — does the posted best for this level move. */
+    lsSet('at_submitted_level_best_' + (levelIdx + 1), String(score));
+    fetchLevelLeaderboard(levelIdx);
+  }).catch(function(){
+    /* Silent on purpose: the local best stays banked and the post is
+       retried next time this level is finished. */
+    fetchLevelLeaderboard(levelIdx);
+  });
+}
+/* After a level is finished: if this device's best on the level beats the
+   best it has ever posted for that level, post it; either way, refresh the
+   per-level board for the level just played. */
+function maybeSubmitLevelScore(){
+  var levelIdx = state.level;
+  var best = levelBestLocal(levelIdx);
+  var posted = parseInt(lsGet('at_submitted_level_best_' + (levelIdx + 1)) || '0', 10) || 0;
+  if(db && best > posted && best > 0){
+    submitLevelScore(levelIdx, best);
+  } else {
+    fetchLevelLeaderboard(levelIdx);
+  }
+}
 /* Called from winLevel/loseLevel after the score is banked: challenge
    result, send-back button, and the score post. */
 function onLevelFinished(){
@@ -3191,6 +3307,7 @@ function onLevelFinished(){
   var sendBtns = document.querySelectorAll('[data-sendback]');
   for(var i = 0; i < sendBtns.length; i++) sendBtns[i].style.display = beat ? '' : 'none';
   maybeSubmitTotal();
+  maybeSubmitLevelScore();
 }
 
 /* ----- share / challenge links -----
@@ -3253,6 +3370,7 @@ function initSocial(){
     lsSet('at_player_name', v);
     setNameMsgs("Saved — you're " + v + ' on the leaderboard ✓', true);
     renderLbRows();
+    renderLevelLbRows();
   }
   for(var n = 0; n < inputs.length; n++){
     (function(inp){
@@ -3279,6 +3397,8 @@ function initSocial(){
   }
   var refreshBtns = document.querySelectorAll('[data-lb-refresh]');
   for(var r = 0; r < refreshBtns.length; r++) refreshBtns[r].addEventListener('click', fetchLeaderboard);
+  var lvlRefreshBtns = document.querySelectorAll('[data-level-lb-refresh]');
+  for(var lr = 0; lr < lvlRefreshBtns.length; lr++) lvlRefreshBtns[lr].addEventListener('click', function(){ fetchLevelLeaderboard(levelLbLevel); });
   var cBtns = document.querySelectorAll('[data-challenge-btn]');
   for(var i = 0; i < cBtns.length; i++){
     cBtns[i].addEventListener('click', function(){
