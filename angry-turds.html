@@ -550,7 +550,7 @@ var state = {
   turkey26Active: false, /* TURKEY26 trial running: full unlock while the playtime clock lasts */
   turkey26Left: 0,       /* TURKEY26 seconds of playtime left (counts down only while playing) */
   drops: [],             /* diarrhea splats dropped mid-flight by the Level 38 turd */
-  levelTurds: []         /* effective turd list for the current level (includes Mega after master unlock) */
+  levelTurds: []         /* effective turd list for the current level: same shot count as designed, types mixed from everything unlocked */
 };
 
 var SKIN = ['#f2c48d','#c68642','#8d5524','#ffdbac','#e0ac69'];
@@ -1008,46 +1008,57 @@ function buildLevel(idx){
       burn: 0, frozen: false
     };
   });
-  /* Effective turds: from Level 38 on (about 3/4 through World 1) the
-     Diarrhea Dropper joins the rotation; the master unlock adds a Mega turd
-     to every level so all turd types are in play */
+  /* Effective turds: every level keeps EXACTLY the number of shots it was
+     designed with — no turd type is ever added on top any more, not even
+     on a full unlock. What changes is WHICH types you get: each attempt
+     shuffles every type you have available and deals only some of them
+     into the lineup, so you no longer get every available turd every
+     time. One run might bring Fire and the Turkey, the next Ice and the
+     Dropper — the rest of the lineup stays as the level designed it
+     (Regular / Chonk), which keeps each level as hard to beat as it was
+     built to be. Available types: the Turkey (FREE for everyone from
+     Level 1), the Diarrhea Dropper (from Level 38 on), the earned
+     specials (Fire / Ice / Bouncy / Bomb — the Whole Game purchase,
+     EVERY26 and an active TURD26 / TURKEY26 trial count as owning all
+     of them, see turdUnlocked), plus Mega and the Toilet Paper Roll on
+     a full unlock. */
   state.levelTurds = def.turds.slice();
-  if(idx >= 37 && state.levelTurds.length >= 2){
-    state.levelTurds[1] = 'squirter';
-  }
-  /* Thanksgiving treat: the Turkey is FREE for everyone from Level 1 — it
-     takes over a plain slot (never the opener, never a special turd) so
-     the shot count stays exactly the same on every level. */
-  for(var tki = 1; tki < state.levelTurds.length; tki++){
-    if(state.levelTurds[tki] === 'normal'){ state.levelTurds[tki] = 'turkey'; break; }
-  }
-  /* Earned special turds join the rotation: each one takes over a plain
-     slot (never the opener) so the shot count stays the same. Once earned
-     they are yours on every level; the Whole Game purchase, EVERY26 and an
-     active TURD26 / TURKEY26 trial count as owning all of them (see turdUnlocked). */
-  ['fire', 'ice', 'bouncy', 'bomb'].forEach(function(sp){
-    if(!turdUnlocked(sp) || state.levelTurds.indexOf(sp) >= 0) return;
-    for(var si2 = state.levelTurds.length - 1; si2 >= 1; si2--){
-      if(state.levelTurds[si2] === 'normal'){ state.levelTurds[si2] = sp; return; }
+  (function(){
+    var total = state.levelTurds.length;
+    if(total < 2) return;
+    var fullUnlock = !!(state.masterUnlocked || state.turd26Active || state.turkey26Active);
+    var pool = ['turkey'];
+    if(idx >= 37) pool.push('squirter');
+    ['fire', 'ice', 'bouncy', 'bomb'].forEach(function(sp){
+      if(turdUnlocked(sp) && pool.indexOf(sp) < 0) pool.push(sp);
+    });
+    if(fullUnlock) pool.push('mega');
+    if(turdUnlocked('tp') && idx < 99) pool.push('tp');
+    /* shuffle the pool, so the mix dealt is different on every attempt */
+    for(var pi = pool.length - 1; pi > 0; pi--){
+      var pj = Math.floor(Math.random() * (pi + 1));
+      var pt = pool[pi]; pool[pi] = pool[pj]; pool[pj] = pt;
     }
-    /* no plain slot left: owners of the full unlock still get every type */
-    if(state.masterUnlocked || state.turd26Active || state.turkey26Active) state.levelTurds.push(sp);
-  });
-  if((state.masterUnlocked || state.turd26Active || state.turkey26Active) && state.levelTurds.indexOf('mega') < 0 && state.levelTurds.length >= 2){
-    /* Mega takes a plain slot too, so it never eats a special turd */
-    var mi = -1;
-    for(var mj = state.levelTurds.length - 1; mj >= 1; mj--){
-      if(state.levelTurds[mj] === 'normal'){ mi = mj; break; }
+    /* How many slots get a mixed-in type: about half the shots after the
+       opener, and never all of them — so even with everything unlocked a
+       level only ever shows a couple of special types at a time. */
+    var mixCount = Math.min(pool.length, Math.max(1, Math.floor((total - 1) / 2)));
+    /* Plain slots a mixed-in type may take over, from the back: never the
+       opener and never a designed Chonk, so the level's own shape stays. */
+    var slots = [];
+    for(var si = total - 1; si >= 1; si--){
+      if(state.levelTurds[si] === 'normal') slots.push(si);
     }
-    if(mi >= 0) state.levelTurds[mi] = 'mega';
-    else state.levelTurds.push('mega');
-  }
-  /* The Toilet Paper Roll rides as the LAST shot whenever it is owned —
-     on Level 100 it is earned just by reaching the level, which makes it
-     the final-level weapon the finale is built around. */
-  if(turdUnlocked('tp') && state.levelTurds.indexOf('tp') < 0){
-    state.levelTurds.push('tp');
-  }
+    for(var mi2 = 0; mi2 < mixCount && mi2 < slots.length; mi2++){
+      state.levelTurds[slots[mi2]] = pool[mi2];
+    }
+    /* The final level keeps its signature finish: on Level 100 the
+       Toilet Paper Roll is the last shot — but it takes that slot
+       instead of being added on top, so the shot count stays the same. */
+    if(idx === 99 && turdUnlocked('tp')){
+      state.levelTurds[total - 1] = 'tp';
+    }
+  })();
   state.people = def.people.map(function(p, i){
     var feetY = (p.length > 1) ? GROUND - p[1] : GROUND;
     return {
@@ -3500,7 +3511,7 @@ function applyMasterUnlock(silent){
   saveProgress();
   buildLevelGrid();
   refreshShop();
-  /* refresh the menu level behind the card so its Mega turd shows right away */
+  /* refresh the menu level behind the card so its newly unlocked turd types can show right away */
   if(state.mode === 'menu'){ buildLevel(state.level); state.mode = 'menu'; }
   if(!silent) promoMsg('Unlocked! All 100 levels across both worlds + every turd type are open. 🎉', true);
 }
