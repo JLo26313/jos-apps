@@ -1003,6 +1003,113 @@ LEVELS[99] = L(
   'Final Frontier Flush'
 );
 
+/* ---- Every level its own fort: no two levels share a setup. The builders
+   above work from a handful of repeating patterns (tower, bridge, pyramid,
+   castle…), so on their own the same shape kept coming back with only the
+   heights changed. This pass gives each of the 100 levels its own layout,
+   derived from the level number itself, so it is the same every visit but
+   never the same as any other level:
+   • the whole fort shifts sideways by a level-specific amount;
+   • a few blocks change material (wood ↔ glass ↔ stone) in a pattern no
+     other level uses — wide roof beams are never touched, so Level 30's
+     burnable wooden roof stays wooden;
+   • from Level 6 on, most levels grow a side wing — a short stack of 1–3
+     blocks on the left or right edge, in that level's own material and
+     height, usually with a person standing on top of it;
+   • ground people scatter to level-specific spots instead of the same
+     handful of crowd positions;
+   • and a final fingerprint check compares every level's full block +
+     people layout against all the others — if two ever did match, the
+     later one gains a small marker block until it doesn't.
+   Each level also records its number as `variant`, which buildLevel uses
+   to deal that level its own crowd behaviour (who paces, how far, how
+   fast) and its own mix of faces and shirts. Level 100's hand-built
+   finale is already one of a kind and is left exactly as built. ---- */
+(function(){
+  function rngFor(seed){
+    var a = (seed * 2654435761 + 1013904223) >>> 0;
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function sigOf(lv){
+    var bs = lv.blocks.map(function(b){ return b.join(','); }).sort().join('|');
+    var ps = lv.people.map(function(p){ return p.join(','); }).sort().join('|');
+    return bs + '#' + ps;
+  }
+  var MATS = ['wood', 'glass', 'stone'];
+  function nextMat(m){ return m === 'wood' ? 'glass' : (m === 'glass' ? 'stone' : 'wood'); }
+  var seen = {};
+  for(var ui = 0; ui < LEVELS.length; ui++){
+    var lv = LEVELS[ui];
+    lv.variant = ui;
+    if(ui === 99){ seen[sigOf(lv)] = ui; continue; }
+    var rng = rngFor(ui + 1);
+    /* shift the whole fort sideways — blocks and the people on them move
+       together, so every perch stays exactly under its person */
+    var dx = Math.round(rng() * 56) - 28, bi2, pi2;
+    var minX = 1e9, maxX = -1e9;
+    for(bi2 = 0; bi2 < lv.blocks.length; bi2++){
+      if(lv.blocks[bi2][0] < minX) minX = lv.blocks[bi2][0];
+      if(lv.blocks[bi2][0] > maxX) maxX = lv.blocks[bi2][0];
+    }
+    if(minX + dx < 612) dx = 612 - minX;
+    if(maxX + dx > 1254) dx = 1254 - maxX;
+    if(dx !== 0){
+      for(bi2 = 0; bi2 < lv.blocks.length; bi2++) lv.blocks[bi2][0] += dx;
+      for(pi2 = 0; pi2 < lv.people.length; pi2++) lv.people[pi2][0] += dx;
+    }
+    /* material twists: 1–3 ordinary blocks change material, picked by this
+       level's own dice — never a wide beam, so roofs keep their job */
+    var cand = [];
+    for(bi2 = 0; bi2 < lv.blocks.length; bi2++) if(lv.blocks[bi2][2] <= 100) cand.push(bi2);
+    for(var ci = cand.length - 1; ci > 0; ci--){
+      var cj = Math.floor(rng() * (ci + 1)), ct2 = cand[ci]; cand[ci] = cand[cj]; cand[cj] = ct2;
+    }
+    var twists = Math.min(cand.length, 1 + (ui % 3));
+    for(var tw = 0; tw < twists; tw++) lv.blocks[cand[tw]][4] = nextMat(lv.blocks[cand[tw]][4]);
+    /* side wing: a short stack on whichever edge this level owns, with a
+       person on top in most levels — skipped only when every spot on that
+       edge is already built on */
+    if(ui >= 5){
+      var wingH = 1 + (ui % 3);
+      var cands = (ui % 2 === 0) ? [652, 674, 696, 716] : [1182, 1204, 1226, 1246];
+      for(var wi2 = cands.length - 1; wi2 > 0; wi2--){
+        var wj = Math.floor(rng() * (wi2 + 1)), wt = cands[wi2]; cands[wi2] = cands[wj]; cands[wj] = wt;
+      }
+      var wingX = null;
+      for(var wc = 0; wc < cands.length && wingX === null; wc++){
+        var blocked = false;
+        for(bi2 = 0; bi2 < lv.blocks.length; bi2++) if(Math.abs(lv.blocks[bi2][0] - cands[wc]) < 70) blocked = true;
+        if(!blocked) wingX = cands[wc];
+      }
+      if(wingX !== null){
+        for(var wh = 0; wh < wingH; wh++) lv.blocks.push([wingX, 38 + 76 * wh, 76, 76, MATS[(ui + wh) % 3]]);
+        if(ui % 4 !== 1) lv.people.push([wingX, 76 * wingH]);
+      }
+    }
+    /* ground people scatter to their own spots for this level */
+    for(pi2 = 0; pi2 < lv.people.length; pi2++){
+      if(lv.people[pi2].length > 1) continue;
+      var nx3 = lv.people[pi2][0] + Math.round(rng() * 36) - 18;
+      lv.people[pi2][0] = Math.max(545, Math.min(1255, nx3));
+    }
+    /* fingerprint guarantee: this level's full layout must be a layout no
+       earlier level has — in the vanishingly unlikely case it isn't, it
+       gains a small ground block of its own until it is */
+    var sig = sigOf(lv), att = 0;
+    while(seen[sig] !== undefined && att < 12){
+      att++;
+      lv.blocks.push([618 + ((ui * 13 + att * 47) % 90), 19, 38, 38, MATS[(ui + att) % 3]]);
+      sig = sigOf(lv);
+    }
+    seen[sig] = ui;
+  }
+})();
+
 var MAT = {
   glass: { hp: 22,  score: 100, fill: '#bfe8f2', edge: '#7fc3d8' },
   wood:  { hp: 48,  score: 200, fill: '#b57e42', edge: '#8a5a2b' },
@@ -1137,31 +1244,52 @@ function buildLevel(idx){
     var feetY = (p.length > 1) ? GROUND - p[1] : GROUND;
     return {
       id: i, x: p[0], y: feetY, w: 30, h: 56,
-      vx: 0, vy: 0, dead: false, skin: SKIN[i % SKIN.length], shirt: SHIRT[i % SHIRT.length],
+      vx: 0, vy: 0, dead: false, skin: SKIN[(i + idx) % SKIN.length], shirt: SHIRT[(i * 2 + idx) % SHIRT.length], act: 0,
       fallStart: null, blink: Math.random() * 3, panic: 0, splatT: 0, freezeT: 0,
       mover: false, homeX: p[0], homeY: feetY, range: 0, speed: 1, phase: 0, facing: 1
     };
   });
   /* Moving targets: from Level 3 on, some people pace back and forth and must
      be splatted on the move. Ground pacers get a wide patrol; people standing
-     on a beam or roof get a short shuffle so they stay on their perch. */
+     on a beam or roof get a short shuffle so they stay on their perch.
+     WHO paces, how far and how fast is dealt by this level's own dice
+     (seeded from the level number), so no two levels have their people
+     doing the same thing: one level's roof crowd shuffles while the next
+     level's stands still and its ground crowd does all the pacing, each
+     at its own range, speed and phase. p.act records the job — 0 stands,
+     1 paces the ground, 2 shuffles a perch. */
   if(idx >= 2){
+    var actA = ((idx + 1) * 2246822519 + 3266489917) >>> 0;
+    var actRng = function(){
+      actA |= 0; actA = actA + 0x6D2B79F5 | 0;
+      var at = Math.imul(actA ^ actA >>> 15, 1 | actA);
+      at = at + Math.imul(at ^ at >>> 7, 61 | at) ^ at;
+      return ((at ^ at >>> 14) >>> 0) / 4294967296;
+    };
     var groundPacers = 0;
+    var groundCap = 2 + Math.floor(idx / 12);
     state.people.forEach(function(p, i){
       var onGround = (p.homeY === GROUND);
-      var want = onGround ? (i % 2 === 0 || idx >= 9) : (i % 2 === 0);
-      if(!want) return;
-      if(onGround && groundPacers >= 2 + Math.floor(idx / 12)) return;
+      var roll = actRng();
+      var want = onGround ? (roll < 0.62) : (roll < 0.5);
+      if(!want){ p.act = 0; return; }
+      if(onGround && groundPacers >= groundCap){ p.act = 0; return; }
       p.mover = true;
-      p.range = onGround ? (80 + (idx % 3) * 14 + Math.min(48, idx * 0.75)) : 34;
-      p.speed = 1.0 + (idx % 5) * 0.13 + i * 0.06 + Math.min(1.0, idx * 0.013);
-      p.phase = i * 1.9 + idx * 0.7;
+      p.act = onGround ? 1 : 2;
+      var rJit = 0.75 + actRng() * 0.6;
+      var sJit = 0.8 + actRng() * 0.7;
+      p.range = onGround
+        ? (72 + (idx % 4) * 12 + Math.min(44, idx * 0.7)) * rJit
+        : Math.min(40, 30 * rJit + 4);
+      p.speed = (1.0 + (idx % 5) * 0.12 + i * 0.05 + Math.min(0.9, idx * 0.012)) * sJit;
+      p.phase = actRng() * Math.PI * 2 + i * 1.3;
       if(onGround) groundPacers++;
     });
     /* guarantee at least one moving target in every level from Level 3 on */
     if(!state.people.some(function(p){ return p.mover; }) && state.people.length){
       var lastP = state.people[state.people.length - 1];
       lastP.mover = true;
+      lastP.act = (lastP.homeY === GROUND) ? 1 : 2;
       lastP.range = (lastP.homeY === GROUND) ? 84 : 30;
       lastP.speed = 1.15 + Math.min(0.6, idx * 0.008);
       lastP.phase = idx * 0.7;
