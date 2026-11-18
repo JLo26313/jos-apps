@@ -379,6 +379,30 @@
           <div class="card">
             <img class="title-art" src="https://jlo26313.github.io/jos-apps/angry-turds-icon.png" alt="Angry Turds title art — a turd character loaded in a slingshot, aiming at a fort full of cartoon people" width="1200" height="630" onerror="this.style.display='none'" />
             <h2>Angry Turds</h2>
+            <div class="name-block">
+              <label>🏆 Your name for the leaderboard</label>
+              <div class="promorow">
+                <input data-name-input type="text" placeholder="Type your name" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Your leaderboard name" />
+                <button class="btn alt" data-name-save type="button">Save name</button>
+              </div>
+              <div class="promomsg" data-name-msg aria-live="polite"></div>
+            </div>
+                        <div class="btnrow">
+              <button class="btn" id="playBtn">▶ Start flinging</button>
+            </div>
+<div class="promo">
+              <label for="promoInput">Promo code</label>
+              <div class="promorow">
+                <input id="promoInput" type="text" placeholder="ENTER CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                <button class="btn alt" id="promoBtn" type="button">Unlock</button>
+              </div>
+              <div class="promomsg" id="promoMsg" aria-live="polite"></div>
+            </div>
+            <div class="lvlgrid" id="lvlGrid"></div>
+            <div class="arsenal" id="arsenal">
+              <h3>🧻 Turd arsenal — what you can launch</h3>
+              <div id="arsenalRows"></div>
+            </div>
             <p>The people have mocked the turds for the last time. Load the slingshot, let it fly, and splat every last one of them — 100 levels across two worlds, with a fresh backdrop every 10 levels.</p>
             <div class="tg-note">🦃 <b>Happy Thanksgiving!</b> 🍂 A brand-new <b>Thanksgiving Turkey</b> turd is <b>FREE for everyone</b> — launch it, tap again mid-flight, and it poops a diarrhea splat straight down while it flies on! Every level is dressed up for the holiday too: falling autumn leaves, pumpkins on the ground and the forts, and pilgrim hats on the people. Gobble gobble!</div>
             <div class="challenge-banner" data-challenge-banner hidden></div>
@@ -392,25 +416,11 @@
               <div>🚀 <b>World 2</b> blasts off into space: 50 more levels, a new planet every 10 levels.</div>
               <div>🏆 Splat everyone before you run out of turds.</div>
             </div>
-            <div class="arsenal" id="arsenal">
-              <h3>🧻 Turd arsenal — what you can launch</h3>
-              <div id="arsenalRows"></div>
-            </div>
-            <div class="btnrow">
-              <button class="btn" id="playBtn">▶ Start flinging</button>
+                        <div class="btnrow">
               <a class="btn alt buy buy-whole-link" href="https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H" target="_blank" rel="noopener">🛒 Whole Game — <s>$43.98</s> $9.99<span class="sale">SALE</span></a>
               <a class="btn buy buy-half-link" href="https://buy.stripe.com/bJe7sK4004tDdsgd0kcAo0F" target="_blank" rel="noopener">🌍 First Half — <s>$21.99</s> $7.99<span class="sale">SALE</span></a>
             </div>
-            <div class="promo">
-              <label for="promoInput">Promo code</label>
-              <div class="promorow">
-                <input id="promoInput" type="text" placeholder="ENTER CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" />
-                <button class="btn alt" id="promoBtn" type="button">Unlock</button>
-              </div>
-              <div class="promomsg" id="promoMsg" aria-live="polite"></div>
-            </div>
-            <div class="lvlgrid" id="lvlGrid"></div>
-            <div class="shop">
+<div class="shop">
               <div class="shopbtns">
                 <a class="btn buy buy-whole-link" href="https://buy.stripe.com/28EdR8bco9NX5Z03pKcAo0H" target="_blank" rel="noopener">🛒 Whole Game — <s>$43.98</s> $9.99<span class="sale">SALE</span></a>
                 <a class="btn alt buy buy-half-link" href="https://buy.stripe.com/bJe7sK4004tDdsgd0kcAo0F" target="_blank" rel="noopener">🌍 First Half (Levels 1–50) — <s>$21.99</s> $7.99<span class="sale">SALE</span></a>
@@ -421,14 +431,6 @@
               <div class="unlocked-line half-unlocked-line" hidden>First half unlocked — all 50 World 1 levels are open ✓ 🌍</div>
               <div class="secure-note">Secure checkout via Stripe · unlocks stay on this device · levels can always be earned by playing, too</div>
               <div class="shopmsg" id="shopMsg" aria-live="polite"></div>
-            </div>
-            <div class="name-block">
-              <label>🏆 Your name for the leaderboard</label>
-              <div class="promorow">
-                <input data-name-input type="text" placeholder="Type your name" maxlength="20" autocomplete="off" spellcheck="false" aria-label="Your leaderboard name" />
-                <button class="btn alt" data-name-save type="button">Save name</button>
-              </div>
-              <div class="promomsg" data-name-msg aria-live="polite"></div>
             </div>
             <div class="lb-panel">
               <div class="lb-head"><span class="lb-title">🏆 Top flushers — live leaderboard</span><button type="button" class="lb-refresh" data-lb-refresh>↻ Refresh</button></div>
