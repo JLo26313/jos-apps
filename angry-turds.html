@@ -607,33 +607,35 @@ var sfx = {
 /* block: [x, heightAboveGroundOfCenter, w, h, material]  person: [x] stands on ground unless y given */
 function L(turds, blocks, people, name){ return { turds: turds, blocks: blocks, people: people, name: name }; }
 var LEVELS = [
-  L(['normal','normal','normal'], [
+  L(['normal','normal'], [
       [900, 40, 76, 76, 'wood'], [900, 114, 76, 76, 'wood'],
       [900, 168, 190, 22, 'wood'],
-      [1062, 40, 76, 76, 'wood']
-    ], [ [900, 179], [1062, 78], [1000] ], 'First Flush'),
-  L(['normal','normal','chonk','normal'], [
+      [1062, 40, 76, 76, 'wood'], [1062, 114, 76, 76, 'wood']
+    ], [ [900, 179], [1062, 152], [1000] ], 'First Flush'),
+  L(['normal','chonk','normal'], [
       [820, 40, 76, 76, 'wood'], [820, 114, 76, 76, 'glass'], [820, 163, 210, 22, 'wood'],
       [1030, 40, 76, 76, 'wood'], [1030, 114, 76, 76, 'wood'], [1030, 163, 210, 22, 'wood'],
-      [925, 204, 130, 60, 'wood']
-    ], [ [820, 174], [1030, 174], [925, 234] ], 'Double Decker'),
-  L(['normal','chonk','normal','normal'], [
+      [925, 204, 130, 60, 'wood'], [925, 272, 76, 76, 'glass']
+    ], [ [820, 174], [1030, 174], [925, 310] ], 'Double Decker'),
+  L(['normal','chonk','normal'], [
       [880, 40, 76, 76, 'stone'], [880, 114, 76, 76, 'wood'], [880, 163, 260, 22, 'wood'],
       [1108, 40, 76, 76, 'stone'], [1108, 114, 76, 76, 'wood'],
-      [994, 212, 76, 76, 'glass'], [994, 261, 200, 22, 'wood']
-    ], [ [880, 174], [994, 174], [1108, 152], [994, 272] ], 'The Outhouse'),
-  L(['normal','normal','chonk','normal','normal'], [
+      [994, 212, 76, 76, 'glass'], [994, 261, 200, 22, 'wood'],
+      [994, 310, 76, 76, 'wood']
+    ], [ [880, 174], [994, 174], [1108, 152], [994, 348] ], 'The Outhouse'),
+  L(['normal','normal','chonk','normal'], [
       [760, 35, 66, 66, 'glass'], [760, 100, 66, 66, 'glass'], [760, 143, 170, 20, 'wood'],
       [952, 40, 76, 76, 'wood'], [952, 114, 76, 76, 'stone'], [952, 162, 170, 20, 'wood'],
       [1144, 35, 66, 66, 'glass'], [1144, 100, 66, 66, 'glass'], [1144, 143, 170, 20, 'wood'],
-      [952, 210, 76, 76, 'wood']
-    ], [ [760, 153], [1010, 172], [1144, 153], [952, 248], [860] ], 'Picnic Panic'),
-  L(['chonk','normal','normal','chonk','normal'], [
+      [952, 210, 76, 76, 'wood'], [952, 286, 76, 76, 'glass']
+    ], [ [760, 153], [1010, 172], [1144, 153], [952, 324], [860] ], 'Picnic Panic'),
+  L(['chonk','normal','normal','chonk'], [
       [800, 40, 76, 76, 'stone'], [800, 114, 76, 76, 'wood'], [800, 188, 76, 76, 'wood'], [800, 238, 250, 22, 'stone'],
       [1050, 40, 76, 76, 'stone'], [1050, 114, 76, 76, 'wood'], [1050, 188, 76, 76, 'wood'],
       [925, 286, 76, 76, 'glass'], [925, 335, 220, 22, 'wood'],
+      [925, 384, 76, 76, 'wood'],
       [925, 40, 76, 76, 'wood']
-    ], [ [800, 249], [1050, 226], [925, 78], [925, 346], [1180] ], 'Flush Royale')
+    ], [ [800, 249], [1050, 226], [925, 78], [925, 422], [1180] ], 'Flush Royale')
 ];
 
 /* ---- Levels 6-50: generated forts, escalating height / stone / people ---- */
@@ -681,12 +683,17 @@ var EXTRA_NAMES = [
     var blocks = [], people = [];
     var t = gi % 7;
     var hard = gi / EXTRA_NAMES.length;
-    var turdCount = Math.min(6, 3 + (gi % 3) + (gi >= 6 ? 1 : 0) + (hard > 0.6 ? 1 : 0));
+    /* Fewer turds than before — every generated level lost a shot, so each
+       fling has to count — while the forts below stack higher as you go:
+       tier adds a storey roughly every 14 levels, so the deeper in you
+       are, the more there is to bring down with those scarcer shots. */
+    var tier = Math.floor(gi / 14);
+    var turdCount = Math.max(2, Math.min(5, 2 + (gi % 3) + (gi >= 6 ? 1 : 0) + (hard > 0.6 ? 1 : 0)));
     var turds = makeTurds(turdCount, hard > 0.2 || t === 3 || t === 6);
     if(t === 0){
       /* Single tower, taller as levels progress */
       var x0 = 900 + ((gi % 3) - 1) * 50;
-      var h0 = 3 + (gi % 3) + (hard > 0.6 ? 1 : 0);
+      var h0 = Math.min(6, 3 + (gi % 3) + tier + (hard > 0.6 ? 1 : 0));
       var top0 = stack(blocks, x0, h0, pickMats(gi, ['wood','glass','wood','stone']));
       var roof0 = beam(blocks, x0, top0, 190, 'wood');
       people.push([x0, roof0]);
@@ -695,7 +702,7 @@ var EXTRA_NAMES = [
     } else if(t === 1){
       /* Two towers + bridge */
       var ax = 840, bx = 1050;
-      var ha = 3 + (gi % 2), hb = 3 + ((gi + 1) % 2);
+      var ha = Math.min(5, 3 + (gi % 2) + tier), hb = Math.min(5, 3 + ((gi + 1) % 2) + tier);
       var ta = stack(blocks, ax, ha, pickMats(gi, ['wood','wood','glass']));
       var tb = stack(blocks, bx, hb, pickMats(gi, ['stone','wood','wood']));
       var bridgeTop = Math.max(ta, tb);
@@ -717,12 +724,20 @@ var EXTRA_NAMES = [
       blocks.push([cx + 40, 114, 76, 76, 'wood']);
       var pTop = beam(blocks, cx, 152, 190, 'wood');
       blocks.push([cx, pTop + 38, 76, 76, hard > 0.5 ? 'stone' : 'wood']);
-      people.push([cx - 80, 76]); people.push([cx + 80, 76]); people.push([cx, pTop + 76]); people.push([cx + 185]);
+      var keepTop = pTop + 76;
+      if(gi >= 14){
+        /* later pyramids sprawl wider and stack a second keep block on top */
+        blocks.push([cx - 160, 38, 76, 76, 'stone']);
+        blocks.push([cx + 245, 38, 76, 76, 'stone']);
+        blocks.push([cx, keepTop + 38, 76, 76, 'wood']);
+        keepTop += 76;
+      }
+      people.push([cx - 80, 76]); people.push([cx + 80, 76]); people.push([cx, keepTop]); people.push([cx + 185]);
     } else if(t === 3){
       /* Castle: two tall towers, long roof, keep on top */
       var lx = 815, rx = 1085;
-      var lt = stack(blocks, lx, 3 + (hard > 0.45 ? 1 : 0), pickMats(gi, ['stone','wood','wood','stone']));
-      var rt = stack(blocks, rx, 3 + (hard > 0.45 ? 1 : 0), pickMats(gi, ['stone','wood','glass','stone']));
+      var lt = stack(blocks, lx, Math.min(5, 3 + tier + (hard > 0.45 ? 1 : 0)), pickMats(gi, ['stone','wood','wood','stone']));
+      var rt = stack(blocks, rx, Math.min(5, 3 + tier + (hard > 0.45 ? 1 : 0)), pickMats(gi, ['stone','wood','glass','stone']));
       var ct = beam(blocks, 950, lt, 360, hard > 0.5 ? 'stone' : 'wood');
       blocks.push([950, ct + 38, 76, 76, 'wood']);
       var ct2 = beam(blocks, 950, ct + 76, 170, 'wood');
@@ -730,7 +745,7 @@ var EXTRA_NAMES = [
     } else if(t === 4){
       /* Triple towers */
       var xs = [790, 935, 1080];
-      var hs = [3 + (gi % 2), 3 + (hard > 0.5 ? 1 : 0), 3 + ((gi + 1) % 2)];
+      var hs = [Math.min(5, 3 + (gi % 2) + tier), Math.min(5, 3 + (hard > 0.5 ? 1 : 0) + tier), Math.min(5, 3 + ((gi + 1) % 2) + tier)];
       for(var xi = 0; xi < 3; xi++){
         var xt = stack(blocks, xs[xi], hs[xi], pickMats(gi, ['wood','glass','stone']));
         var xr = beam(blocks, xs[xi], xt, 150, 'wood');
@@ -741,7 +756,7 @@ var EXTRA_NAMES = [
       /* Staircase up */
       var sx = 790;
       for(var si = 0; si < 4; si++){
-        var st = stack(blocks, sx + si * 92, si + 1 + (si >= 2 && hard > 0.35 ? 1 : 0), pickMats(gi, ['wood','wood','glass','stone']));
+        var st = stack(blocks, sx + si * 92, Math.min(6, si + 1 + (si >= 2 && hard > 0.35 ? 1 : 0) + (si >= 1 ? tier : 0)), pickMats(gi, ['wood','wood','glass','stone']));
         if(si === 3){
           var sr = beam(blocks, sx + si * 92, st, 170, 'wood');
           people.push([sx + si * 92, sr]);
@@ -758,14 +773,26 @@ var EXTRA_NAMES = [
       blocks.push([bx2 - 84, 114, 76, 76, 'wood']);
       blocks.push([bx2 + 84, 114, 76, 76, 'wood']);
       var bunkerTop = 152;
-      if(hard > 0.5){
+      if(hard > 0.3){
         blocks.push([bx2 - 84, 190, 76, 76, 'stone']);
         blocks.push([bx2 + 84, 190, 76, 76, 'stone']);
         bunkerTop = 228;
       }
-      var bt2 = beam(blocks, bx2, bunkerTop, 300, hard > 0.5 ? 'stone' : 'wood');
+      if(hard > 0.65){
+        /* the deepest bunkers stack a fourth storey before the roof goes on */
+        blocks.push([bx2 - 84, 266, 76, 76, 'stone']);
+        blocks.push([bx2 + 84, 266, 76, 76, 'wood']);
+        bunkerTop = 304;
+      }
+      var bt2 = beam(blocks, bx2, bunkerTop, 300, hard > 0.3 ? 'stone' : 'wood');
       blocks.push([bx2, bt2 + 38, 76, 76, 'glass']);
-      people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt2 + 76]); people.push([bx2 + 190]);
+      var spireTop = bt2 + 76;
+      if(gi >= 20){
+        /* and a stone spire block stacked on the roof for good measure */
+        blocks.push([bx2, spireTop + 38, 76, 76, 'stone']);
+        spireTop += 76;
+      }
+      people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, spireTop]); people.push([bx2 + 190]);
     }
     /* difficulty ramp: the deeper into World 1, the more people crowd the field */
     var extraP = Math.floor(gi / 8); /* 0 early on, up to +5 by the last levels */
@@ -780,14 +807,15 @@ var EXTRA_NAMES = [
    still standing. It keeps all 7 people and both stone-capped towers, but
    the great roof beam is wood instead of stone (so the Fire Turd has
    something to burn and a hard hit can drop the whole roof) and the player
-   gets one extra turd. Still a tough castle — just no longer a coin flip. ---- */
+   gets four turds — one more than the levels around it now hand out, but
+   still one fewer than this castle used to give. Tough — no longer a coin flip. ---- */
 (function(){
   var gc = LEVELS[29];
   if(!gc || gc.name !== 'Glass Castle') return;
   for(var bi = 0; bi < gc.blocks.length; bi++){
     if(gc.blocks[bi][2] === 360 && gc.blocks[bi][4] === 'stone') gc.blocks[bi][4] = 'wood';
   }
-  gc.turds.push('normal');
+  gc.turds = ['normal','chonk','normal','normal'];
 })();
 
 /* ---- World 2: Levels 51-100, out in space. Fifty more forts on five
@@ -822,7 +850,8 @@ var W2_NAMES = [
     return mats;
   }
   function makeTurds2(wi){
-    var n = 5 + (wi % 2), t = [];
+    /* one shot fewer than World 2 used to give — 4 or 5 across all of space */
+    var n = 4 + (wi % 2), t = [];
     for(var i = 0; i < n; i++) t.push('normal');
     t[1] = 'chonk';
     if(n > 4) t[3] = 'chonk';
@@ -833,11 +862,12 @@ var W2_NAMES = [
     var blocks = [], people = [];
     var t = wi % 7;
     var boost = wi >= 40 ? 2 : (wi >= 20 ? 1 : 0);
+    var tier2 = Math.floor(wi / 12);
     var turds = makeTurds2(wi);
     if(t === 0){
       /* Single tower, taller than anything in World 1 */
       var x0 = 900 + ((wi % 3) - 1) * 50;
-      var h0 = 4 + (wi % 2) + boost;
+      var h0 = Math.min(7, 4 + (wi % 2) + boost + (tier2 > 0 ? 1 : 0));
       var top0 = stack(blocks, x0, h0, matsFor(wi, ['stone','wood','glass','stone','wood']));
       var roof0 = beam(blocks, x0, top0, 200, wi > 20 ? 'stone' : 'wood');
       people.push([x0, roof0]);
@@ -846,7 +876,7 @@ var W2_NAMES = [
     } else if(t === 1){
       /* Two towers + bridge */
       var ax = 840, bx = 1050;
-      var ha = 3 + (boost > 0 ? 1 : 0), hb = 3 + (wi % 2) + (boost > 0 ? 1 : 0);
+      var ha = Math.min(6, 3 + (boost > 0 ? 1 : 0) + (wi >= 24 ? 1 : 0)), hb = Math.min(6, 3 + (wi % 2) + (boost > 0 ? 1 : 0) + (wi >= 24 ? 1 : 0));
       var ta = stack(blocks, ax, ha, matsFor(wi, ['stone','wood','wood','glass']));
       var tb = stack(blocks, bx, hb, matsFor(wi, ['stone','stone','wood','wood']));
       var bridgeTop = Math.max(ta, tb);
@@ -866,12 +896,18 @@ var W2_NAMES = [
       var pTop = beam(blocks, cx, 152, 190, 'wood');
       blocks.push([cx, pTop + 38, 76, 76, 'stone']);
       var pTop2 = beam(blocks, cx, pTop + 76, 150, 'wood');
-      people.push([cx - 80, 76]); people.push([cx + 80, 76]); people.push([cx, pTop2]); people.push([cx + 185]);
+      var pyrTop = pTop2;
+      if(wi >= 18){
+        /* deeper space pyramids stack another stone block and a second cap beam */
+        blocks.push([cx, pyrTop + 38, 76, 76, 'stone']);
+        pyrTop = beam(blocks, cx, pyrTop + 76, 150, 'wood');
+      }
+      people.push([cx - 80, 76]); people.push([cx + 80, 76]); people.push([cx, pyrTop]); people.push([cx + 185]);
     } else if(t === 3){
       /* Castle: two tall towers, stone roof, keep on top */
       var lx = 815, rx = 1085;
-      var lt = stack(blocks, lx, 3 + boost, matsFor(wi, ['stone','stone','wood','glass']));
-      var rt = stack(blocks, rx, 3 + boost, matsFor(wi, ['stone','wood','stone','wood']));
+      var lt = stack(blocks, lx, Math.min(6, 3 + boost + (wi >= 36 ? 1 : 0)), matsFor(wi, ['stone','stone','wood','glass']));
+      var rt = stack(blocks, rx, Math.min(6, 3 + boost + (wi >= 36 ? 1 : 0)), matsFor(wi, ['stone','wood','stone','wood']));
       var ct = beam(blocks, 950, lt, 360, 'stone');
       blocks.push([950, ct + 38, 76, 76, 'stone']);
       var ct2 = beam(blocks, 950, ct + 76, 170, 'wood');
@@ -879,7 +915,7 @@ var W2_NAMES = [
     } else if(t === 4){
       /* Triple towers */
       var xs = [790, 935, 1080];
-      var hs = [3 + (boost > 0 ? 1 : 0), 4 + (boost > 1 ? 1 : 0), 3 + (boost > 0 ? 1 : 0)];
+      var hs = [Math.min(6, 3 + (boost > 0 ? 1 : 0) + (wi >= 24 ? 1 : 0)), Math.min(6, 4 + (boost > 1 ? 1 : 0) + (wi >= 24 ? 1 : 0)), Math.min(6, 3 + (boost > 0 ? 1 : 0) + (wi >= 24 ? 1 : 0))];
       for(var xi = 0; xi < 3; xi++){
         var xt = stack(blocks, xs[xi], hs[xi], matsFor(wi, ['wood','stone','glass','wood']));
         var xr = beam(blocks, xs[xi], xt, 150, 'wood');
@@ -890,7 +926,7 @@ var W2_NAMES = [
       /* Staircase up */
       var sx = 790;
       for(var si = 0; si < 4; si++){
-        var st = stack(blocks, sx + si * 92, si + 1 + (si === 3 ? boost : 0), matsFor(wi, ['stone','wood','glass','stone']));
+        var st = stack(blocks, sx + si * 92, Math.min(7, si + 1 + (si === 3 ? boost : 0) + (si >= 2 && wi >= 24 ? 1 : 0)), matsFor(wi, ['stone','wood','glass','stone']));
         if(si === 3){
           var sr = beam(blocks, sx + si * 92, st, 170, 'wood');
           people.push([sx + si * 92, sr]);
@@ -909,7 +945,13 @@ var W2_NAMES = [
       var bt2 = beam(blocks, bx2, 152, 300, 'stone');
       blocks.push([bx2, bt2 + 38, 76, 76, 'stone']);
       var bt3 = beam(blocks, bx2, bt2 + 76, 170, 'wood');
-      people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bt3]); people.push([bx2 + 190]);
+      var bkTop = bt3;
+      if(wi >= 25){
+        /* deeper space bunkers stack one more stone block and cap beam on top */
+        blocks.push([bx2, bkTop + 38, 76, 76, 'stone']);
+        bkTop = beam(blocks, bx2, bkTop + 76, 170, 'wood');
+      }
+      people.push([bx2]); people.push([bx2 - 84, bt2]); people.push([bx2, bkTop]); people.push([bx2 + 190]);
     }
     /* space crowds: more people the deeper into World 2 you go (capped by
        the number of distinct crowd spots, so nobody stacks on a twin) */
@@ -924,12 +966,13 @@ var W2_NAMES = [
    fort with a hand-built monster — the tallest fort in the game, two
    six-high towers and a five-high keep, built almost entirely of stone,
    crowded with twelve people (several of them pacing at top speed thanks to
-   the mover ramp in buildLevel). It takes near-perfect shots to clear, and
+   the mover ramp in buildLevel). You get just seven shots — near-perfect
+   ones — to clear it, and
    the Toilet Paper Roll — earned by reaching this level and appended as the
    last shot in buildLevel — is the key to cracking it open. Hard, but the
    Bomb and TP bursts plus tower collapses make it genuinely beatable. ---- */
 LEVELS[99] = L(
-  ['normal','normal','fire','chonk','ice','bouncy','bomb','chonk','normal'],
+  ['normal','normal','fire','chonk','ice','bomb','chonk'],
   [
     /* left tower, six high, nearly all stone */
     [790, 38, 76, 76, 'stone'], [790, 114, 76, 76, 'stone'], [790, 190, 76, 76, 'wood'],
@@ -945,14 +988,14 @@ LEVELS[99] = L(
     /* the crown keep on top */
     [945, 516, 76, 76, 'stone'],
     [945, 565, 170, 22, 'wood'],
-    /* side outposts */
-    [676, 38, 76, 76, 'stone'],
-    [1214, 38, 76, 76, 'stone']
+    /* side outposts, now stacked two high */
+    [676, 38, 76, 76, 'stone'], [676, 114, 76, 76, 'stone'],
+    [1214, 38, 76, 76, 'stone'], [1214, 114, 76, 76, 'wood']
   ],
   [
     [945, 576],            /* on the very top — the smuggest person in space */
     [820, 478], [1010, 478], [1070, 478], /* pacing the great roof */
-    [676, 76], [1214, 76],   /* on the outposts */
+    [676, 152], [1214, 152],   /* on the outposts */
     [867], [1023],           /* in the gaps between the towers */
     [735], [1157],           /* at the tower feet */
     [600], [548]             /* out on the plain */
@@ -1016,7 +1059,8 @@ function buildLevel(idx){
      time. One run might bring Fire and the Turkey, the next Ice and the
      Dropper — the rest of the lineup stays as the level designed it
      (Regular / Chonk), which keeps each level as hard to beat as it was
-     built to be. Available types: the Turkey (FREE for everyone from
+     built to be. A handful of levels override the shuffle with a
+     guaranteed turd — see GUARANTEE below. Available types: the Turkey (FREE for everyone from
      Level 1), the Diarrhea Dropper (from Level 38 on), the earned
      specials (Fire / Ice / Bouncy / Bomb — the Whole Game purchase,
      EVERY26 and an active TURD26 / TURKEY26 trial count as owning all
@@ -1051,6 +1095,36 @@ function buildLevel(idx){
     }
     for(var mi2 = 0; mi2 < mixCount && mi2 < slots.length; mi2++){
       state.levelTurds[slots[mi2]] = pool[mi2];
+    }
+    /* Guaranteed debuts: whatever the shuffle dealt, a few levels must
+       ALWAYS include a specific turd. The level that introduces a new
+       turd deals it without fail — Fire on Level 15, Bouncy on Level 55,
+       Bomb on Level 75 — and Level 30 deals both the Ice it introduces
+       AND Fire, because its great roof beam is wood and only Fire can
+       burn it away. The free Thanksgiving Turkey is likewise always in
+       the Level 1 lineup. A guaranteed turd takes a mixed slot: it
+       replaces a plain slot the mixer was allowed to touch (never the
+       opener, never a designed Chonk), so the level's shot count stays
+       exactly as designed — guaranteed turds are never added on top. */
+    var GUARANTEE = { 0: ['turkey'], 14: ['fire'], 29: ['fire', 'ice'], 54: ['bouncy'], 74: ['bomb'] };
+    var must = GUARANTEE[idx] || [];
+    for(var gi2 = 0; gi2 < must.length; gi2++){
+      var gt = must[gi2];
+      if(state.levelTurds.indexOf(gt) >= 0) continue;
+      var placed = false;
+      /* first choice: a slot that is still plain, taken from the back */
+      for(var gs = total - 1; gs >= 1 && !placed; gs--){
+        if(def.turds[gs] === 'normal' && state.levelTurds[gs] === 'normal'){
+          state.levelTurds[gs] = gt; placed = true;
+        }
+      }
+      /* otherwise take over a slot the mixer already dealt a special
+         into — but never a slot another guaranteed turd just claimed */
+      for(var gs2 = total - 1; gs2 >= 1 && !placed; gs2++){
+        if(def.turds[gs2] === 'normal' && must.indexOf(state.levelTurds[gs2]) < 0){
+          state.levelTurds[gs2] = gt; placed = true;
+        }
+      }
     }
     /* The final level keeps its signature finish: on Level 100 the
        Toilet Paper Roll is the last shot — but it takes that slot
@@ -1659,6 +1733,7 @@ function starCount(){
   var total = turdTotal();
   if(used <= Math.ceil(total / 2)) return 3;
   if(used <= total - 1) return 2;
+  if(total <= 3) return 2;
   return 1;
 }
 function winLevel(){
