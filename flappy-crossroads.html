@@ -236,6 +236,15 @@
       .offer-price{ font-size:13px; font-weight:800; margin-top:5px; opacity:.92; }
       .offer-box .pack-buy{ margin-top:9px; }
       .promo-time{ font-size:12.5px; font-weight:800; margin-top:5px; opacity:.92; line-height:1.35; }
+      .festive-note{
+        margin-top:10px; max-width:360px; background:rgba(255,166,35,.28); border:2px solid rgba(255,215,106,.85);
+        border-radius:12px; padding:9px 12px; font-weight:800; font-size:14px; line-height:1.4; color:#ffe9a8;
+      }
+      .trial-badge{
+        display:none; background:#fff3d6; border:2px solid #e8762d; color:#8a3b00;
+        border-radius:999px; padding:2px 10px; font-size:12px; font-weight:800; line-height:1.35;
+      }
+      .trial-badge.show{ display:inline-block; }
       /* Promo code */
       .promo-box{
         margin-top:14px; width:100%; max-width:340px; background:rgba(255,255,255,.14);
@@ -406,6 +415,7 @@
         <span class="lv-name" id="lvName">Level 1 · Classic Day</span>
         <span class="lv-prog" id="lvProg">Target: 100 pts</span>
         <span class="lv-prog" id="lvTime">Time: 0:00</span>
+        <span class="trial-badge" id="trialBadge" aria-live="polite"></span>
         <button class="icon-btn view-btn" id="rotBtn" aria-label="Rotate screen" aria-pressed="false" title="Rotate screen">🔄</button>
         <button class="icon-btn view-btn" id="fsBtn" aria-label="Big screen" aria-pressed="false" title="Big screen">⛶</button>
       </div>
@@ -420,6 +430,7 @@
           <img class="start-icon" src="https://jlo26313.github.io/jos-apps/flappy-crossroads-icon.png" alt="Flappy Crossroads icon — a red bird flying over a winding road with cars, above a river with a floating log" width="132" height="132" />
           <h1>Flappy<br />Crossroads</h1>
           <p>One very determined bird. A whole town of traffic.</p>
+          <div class="festive-note">🦃 Happy Thanksgiving! The new Turkey character is free for everyone — find it in the character picker below. Every background is dressed up for fall, with pumpkins by the roads and rivers and autumn leaves drifting by. Try promo code TURKEY26 for a full hour of everything unlocked.</div>
           <div class="challenge-banner" data-challenge-banner style="display:none"></div>
           <form class="name-form" data-name-form>
             <div class="promo-lab">Your leaderboard name</div>
@@ -780,7 +791,11 @@
         if(segCount < 2){ type = 'grass'; }
         else { type = pick(SEG_TYPES); }
         var w = Math.round(rand(240, 350));
-        var seg = { type: type, x: x, w: w, counted: false, cars: [], logs: [], tower: null, egg: null, trees: [], flowers: [], bushes: [], houses: [], reeds: [], butterflies: [], lilies: [], lamp: false };
+        var seg = { type: type, x: x, w: w, counted: false, cars: [], logs: [], tower: null, egg: null, trees: [], flowers: [], bushes: [], houses: [], reeds: [], butterflies: [], lilies: [], lamp: false, pumpkins: [] };
+        // Thanksgiving dressing (visual only — never affects collisions):
+        // pumpkins along the roadside, grass and riverbanks on every segment.
+        if(Math.random() < 0.85) seg.pumpkins.push({ dx: rand(10, Math.max(14, w - 34)), s: rand(0.8, 1.25) });
+        if(Math.random() < 0.35) seg.pumpkins.push({ dx: rand(10, Math.max(14, w - 34)), s: rand(0.6, 0.95) });
         // Scenery dressing (visual only — never affects collisions)
         if(type === 'grass'){
           var nf = Math.round(rand(5, 10));
@@ -865,6 +880,9 @@
                          fc_ghost_claimed / fc_ghost_left (GHOST26, 30 min of play left)
                          fc_flappy_claimed / fc_flappy_left (FLAPPY26, 30 min of play left,
                          full unlock: colors, all 4 packs AND all 8 backgrounds)
+                         fc_turkey26_claimed / fc_turkey26_left (TURKEY26, 60 min of play left,
+                         full unlock: colors, all 4 packs AND all 8 backgrounds — separate
+                         keys from FLAPPY26, so the two trials are fully independent)
            promo master: fc_every_unlocked (EVERY2026, permanent, separate from paid;
                          covers colors, all 4 packs AND all 8 backgrounds)
            paid bgs    : fc_bg1 .. fc_bg8 (Stripe ?bgN=success, permanent)
@@ -913,7 +931,8 @@
         { id: 'dragon',  name: 'Fire Dragon', pack: 3, dot: '#3fae5a' },
         { id: 'bee',     name: 'Bumblebee',   pack: 3, dot: '#f7c531' },
         { id: 'robot',   name: 'Robot',       pack: 4, dot: '#aeb9c4' },
-        { id: 'ghost',   name: 'Ghost',       pack: 4, dot: '#eef2f7' }
+        { id: 'ghost',   name: 'Ghost',       pack: 4, dot: '#eef2f7' },
+        { id: 'turkey',  name: 'Turkey',      pack: 0, dot: '#8a5a2b', free: true }
       ];
       /* Campaign levels: each background is a level (level n plays on
          background n-1). Reach `target` points to clear the level.
@@ -953,6 +972,7 @@
       var beePromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var ghostPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
       var flappyPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS_30 };
+      var turkeyPromo = { claimed: false, left: 0, active: false, pending: false, dur: PROMO_SECONDS };
       // Backgrounds: paid flags, promo trials (30 min of play each), selection.
       var bgPaid = [false, false, false, false, false, false, false, false, false];
       var justBoughtBg = 0;
@@ -990,6 +1010,7 @@
         savePromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
         savePromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
         savePromo(flappyPromo, 'fc_flappy_claimed', 'fc_flappy_left');
+        savePromo(turkeyPromo, 'fc_turkey26_claimed', 'fc_turkey26_left');
         for(var bs = 1; bs <= 8; bs++) savePromo(bgPromos[bs], 'fc_bg' + bs + '_claimed', 'fc_bg' + bs + '_left');
       }
 
@@ -1003,6 +1024,7 @@
       loadPromo(beePromo, 'fc_bee_claimed', 'fc_bee_left');
       loadPromo(ghostPromo, 'fc_ghost_claimed', 'fc_ghost_left');
       loadPromo(flappyPromo, 'fc_flappy_claimed', 'fc_flappy_left');
+      loadPromo(turkeyPromo, 'fc_turkey26_claimed', 'fc_turkey26_left');
       for(var bl = 1; bl <= 8; bl++){
         bgPaid[bl] = lsGet('fc_bg' + bl) === '1';
         loadPromo(bgPromos[bl], 'fc_bg' + bl + '_claimed', 'fc_bg' + bl + '_left');
@@ -1021,9 +1043,9 @@
       try{ var lsChars = JSON.parse(lsGet('fc_level_chars') || '[]'); if(lsChars && lsChars.length) levelChars = lsChars; }catch(e){}
 
       /* ----- access checks (paid OR live promo trial) ----- */
-      function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending || flappyPromo.active || flappyPromo.pending; }
+      function colorsOn(){ return paidUnlocked || everyUnlocked || flyPromo.active || flyPromo.pending || flappyPromo.active || flappyPromo.pending || turkeyPromo.active || turkeyPromo.pending; }
       function packOn(n){
-        if(packPaid[n] || everyUnlocked || flappyPromo.active || flappyPromo.pending) return true;
+        if(packPaid[n] || everyUnlocked || flappyPromo.active || flappyPromo.pending || turkeyPromo.active || turkeyPromo.pending) return true;
         if(n === 1) return !!(getPromo.active || getPromo.pending);
         if(n === 2) return !!(frogPromo.active || frogPromo.pending);
         if(n === 3) return !!(beePromo.active || beePromo.pending);
@@ -1034,10 +1056,10 @@
         for(var i = 0; i < CHARACTERS.length; i++) if(CHARACTERS[i].id === id) return CHARACTERS[i];
         return null;
       }
-      function charOn(id){ var d = charDef(id); if(!d) return false; if(levelChars.indexOf(id) >= 0) return true; return packOn(d.pack); }
+      function charOn(id){ var d = charDef(id); if(!d) return false; if(d.free) return true; if(levelChars.indexOf(id) >= 0) return true; return packOn(d.pack); }
       function bgOn(n){
         if(n === 0) return true;
-        return !!(everyUnlocked || flappyPromo.active || flappyPromo.pending || bgPaid[n] || bgPromos[n].active || bgPromos[n].pending);
+        return !!(everyUnlocked || flappyPromo.active || flappyPromo.pending || turkeyPromo.active || turkeyPromo.pending || bgPaid[n] || bgPromos[n].active || bgPromos[n].pending);
       }
       /* A level is playable when the level before it was cleared (campaign),
          or when its background is owned / on a promo trial (paid & codes
@@ -1124,6 +1146,7 @@
         if(beePromo.active && !beePromo.pending) parts.push('BEE26 free time left: ' + fmtLeft(beePromo.left) + ' of play');
         if(ghostPromo.active && !ghostPromo.pending) parts.push('GHOST26 free time left: ' + fmtLeft(ghostPromo.left) + ' of play');
         if(flappyPromo.active && !flappyPromo.pending) parts.push('FLAPPY26 free time left: ' + fmtLeft(flappyPromo.left) + ' of play');
+        if(turkeyPromo.active && !turkeyPromo.pending) parts.push('TURKEY26 free time left: ' + fmtLeft(turkeyPromo.left) + ' of play');
         for(var bp = 1; bp <= 8; bp++){
           if(bgPromos[bp].active && !bgPromos[bp].pending) parts.push(BGS[bp].code + ' free time left: ' + fmtLeft(bgPromos[bp].left) + ' of play');
         }
@@ -1131,6 +1154,11 @@
         for(var i = 0; i < els.length; i++){
           els[i].textContent = parts.join('  ·  ');
           els[i].style.display = parts.length ? '' : 'none';
+        }
+        var badge = document.getElementById('trialBadge');
+        if(badge){
+          badge.textContent = parts.length ? '⏳ Trial: ' + parts.join('  ·  ') : '';
+          badge.classList.toggle('show', !!parts.length);
         }
       }
 
@@ -1528,6 +1556,17 @@
                   claimPromo(flappyPromo, show, 'Free time started! Everything unlocked — all bird colors, all 4 character packs and all 8 backgrounds — for 30 minutes of play time.');
                   if(input) input.value = '';
                 }
+              } else if(code === 'TURKEY26'){
+                if(everyUnlocked){
+                  show('Everything is already unlocked ✓', true);
+                } else if(turkeyPromo.active){
+                  show('Free time already running — ' + fmtLeft(turkeyPromo.left) + ' of play left', true);
+                } else if(turkeyPromo.claimed){
+                  show("TURKEY26's free time has already been used on this device", false);
+                } else {
+                  claimPromo(turkeyPromo, show, 'Free time started! Everything unlocked — all bird colors, all 4 character packs and all 8 backgrounds — for 60 minutes of play time.');
+                  if(input) input.value = '';
+                }
               } else if(bgCodeIndex(code) > 0){
                 var bn3 = bgCodeIndex(code);
                 if(everyUnlocked){
@@ -1569,12 +1608,13 @@
         tickPromo(beePromo, dt);
         tickPromo(ghostPromo, dt);
         tickPromo(flappyPromo, dt);
+        tickPromo(turkeyPromo, dt);
         var anyBg = false;
         for(var bt = 1; bt <= 8; bt++){ tickPromo(bgPromos[bt], dt); if(bgPromos[bt].active) anyBg = true; }
         promoSaveTimer += dt;
         if(promoSaveTimer >= 1){
           promoSaveTimer = 0;
-          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active || flappyPromo.active || anyBg){ savePromos(); refreshPromoTime(); }
+          if(flyPromo.active || getPromo.active || frogPromo.active || beePromo.active || ghostPromo.active || flappyPromo.active || turkeyPromo.active || anyBg){ savePromos(); refreshPromoTime(); }
         }
       }
       /* Called when a run ends: any promo whose time ran out mid-run now locks. */
@@ -1586,6 +1626,7 @@
         if(beePromo.pending){ beePromo.pending = false; beePromo.active = false; ended = true; }
         if(ghostPromo.pending){ ghostPromo.pending = false; ghostPromo.active = false; ended = true; }
         if(flappyPromo.pending){ flappyPromo.pending = false; flappyPromo.active = false; ended = true; }
+        if(turkeyPromo.pending){ turkeyPromo.pending = false; turkeyPromo.active = false; ended = true; }
         for(var be = 1; be <= 8; be++){
           if(bgPromos[be].pending){ bgPromos[be].pending = false; bgPromos[be].active = false; ended = true; }
         }
@@ -2858,6 +2899,105 @@
         ctx.beginPath(); ctx.arc(-8.5, 1.5, 2.7, 0, 7); ctx.arc(8.5, 1.5, 2.7, 0, 7); ctx.fill();
         ctx.restore();
       }
+      function drawTurkey(){
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot * 0.5);
+        var flapA = Math.sin(bird.wing * Math.PI) * 0.9 - 0.15 + Math.sin(time * 10) * 0.08;
+        // fanned tail feathers — fall colors, spread out behind the body
+        var fanCols = ['#c22f28', '#e8762d', '#f5a623', '#ffd94d', '#e8762d', '#c65d3a', '#8f3b1d'];
+        for(var fi2 = 0; fi2 < fanCols.length; fi2++){
+          var fa2 = -1.15 + fi2 * 0.38;
+          ctx.save();
+          ctx.translate(-9, 1); ctx.rotate(fa2);
+          ctx.fillStyle = fanCols[fi2];
+          ctx.beginPath(); ctx.ellipse(-13, 0, 14, 5.2, 0, 0, 7); ctx.fill();
+          ctx.strokeStyle = 'rgba(90,40,10,.55)'; ctx.lineWidth = 1.3;
+          ctx.beginPath(); ctx.ellipse(-13, 0, 14, 5.2, 0, 0, 7); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,.35)';
+          ctx.beginPath(); ctx.ellipse(-20, -1.2, 4.5, 1.8, 0, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+        // little orange feet dangling
+        ctx.strokeStyle = '#e8762d'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-3, 12); ctx.lineTo(-4, 17); ctx.moveTo(5, 12); ctx.lineTo(6, 17); ctx.stroke();
+        // brown body
+        var tg = ctx.createRadialGradient(-5, -6, 2, 0, 0, bird.r + 3);
+        tg.addColorStop(0, '#a06a35'); tg.addColorStop(0.55, '#8a5a2b'); tg.addColorStop(1, '#5e3c17');
+        ctx.fillStyle = tg;
+        ctx.beginPath(); ctx.arc(0, 1, bird.r, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(50,25,0,.6)'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(0, 1, bird.r, 0, 7); ctx.stroke();
+        // lighter belly
+        ctx.fillStyle = '#d9a05f';
+        ctx.beginPath(); ctx.ellipse(3, 7, 8.5, 5.8, 0, 0, 7); ctx.fill();
+        // wing — darker brown, flapping
+        ctx.save();
+        ctx.translate(-4, 0); ctx.rotate(flapA * 0.7);
+        ctx.fillStyle = '#5e3c17';
+        ctx.beginPath(); ctx.ellipse(-5, 3, 10, 5.8, 0.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(30,15,0,.5)'; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.ellipse(-5, 3, 10, 5.8, 0.5, 0, 7); ctx.stroke();
+        ctx.restore();
+        // head
+        ctx.fillStyle = '#8a5a2b';
+        ctx.beginPath(); ctx.arc(10, -7, 8.2, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(50,25,0,.5)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(10, -7, 8.2, 0, 7); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(7, -10.5, 3.4, 2, -0.5, 0, 7); ctx.fill();
+        // orange beak
+        ctx.fillStyle = '#f58a1f';
+        ctx.beginPath();
+        ctx.moveTo(16, -9); ctx.lineTo(25, -6); ctx.lineTo(16, -3.5); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(150,70,0,.5)'; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(16, -9); ctx.lineTo(25, -6); ctx.lineTo(16, -3.5); ctx.closePath(); ctx.stroke();
+        // red wattle hanging under the beak
+        ctx.fillStyle = '#e8433c';
+        ctx.beginPath(); ctx.ellipse(15.5, 0.5, 3.2, 5.2, 0.25, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ff7a6e';
+        ctx.beginPath(); ctx.ellipse(14.6, -1, 1.3, 2.4, 0.25, 0, 7); ctx.fill();
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(11.5, -8.5, 3.6, 0, 7); ctx.fill();
+        ctx.fillStyle = '#1c2733';
+        ctx.beginPath(); ctx.arc(12.6, -8.5, 1.8, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(12, -9.2, 0.6, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawPumpkin(x, baseY, s){
+        // shadow
+        ctx.fillStyle = 'rgba(20,40,10,.22)';
+        ctx.beginPath(); ctx.ellipse(x, baseY + 2, 13 * s, 3.2 * s, 0, 0, 7); ctx.fill();
+        // ribbed orange body
+        ctx.fillStyle = '#e8762d';
+        ctx.beginPath(); ctx.ellipse(x, baseY - 7 * s, 12.5 * s, 8.5 * s, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(150,60,0,.45)'; ctx.lineWidth = 1.4 * s;
+        ctx.beginPath(); ctx.ellipse(x - 6 * s, baseY - 7 * s, 6 * s, 8 * s, 0, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(x + 6 * s, baseY - 7 * s, 6 * s, 8 * s, 0, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(x, baseY - 7 * s, 3.6 * s, 8.3 * s, 0, 0, 7); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,200,120,.5)';
+        ctx.beginPath(); ctx.ellipse(x - 4 * s, baseY - 10 * s, 4.5 * s, 2.6 * s, -0.4, 0, 7); ctx.fill();
+        // stem + leaf
+        ctx.fillStyle = '#5e7a2a';
+        ctx.beginPath(); ctx.moveTo(x - 2 * s, baseY - 14.5 * s); ctx.lineTo(x + 1 * s, baseY - 18 * s); ctx.lineTo(x + 4 * s, baseY - 14.5 * s); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#7aa832';
+        ctx.beginPath(); ctx.ellipse(x + 6 * s, baseY - 15.5 * s, 4.2 * s, 2 * s, -0.5, 0, 7); ctx.fill();
+      }
+      function drawFestiveLeaves(){
+        // Falling autumn leaves drifting through every background (Thanksgiving).
+        var leafCols2 = ['#e8433c', '#f5a623', '#ffd94d', '#e8762d', '#c65d3a'];
+        for(var lf2 = 0; lf2 < 20; lf2++){
+          var lfx2 = ((lf2 * 71 + Math.sin(time * 0.8 + lf2 * 1.9) * 22 - time * 12 * (0.6 + (lf2 % 3) * 0.2)) % (VW + 24) + (VW + 24)) % (VW + 24) - 12;
+          var lfy2 = (lf2 * 83 + time * 26 * (0.5 + (lf2 % 4) * 0.16)) % (VH + 12) - 6;
+          ctx.save(); ctx.translate(lfx2, lfy2); ctx.rotate(time * 1.8 + lf2 * 1.3);
+          ctx.globalAlpha = 0.88;
+          ctx.fillStyle = leafCols2[lf2 % leafCols2.length];
+          ctx.beginPath(); ctx.ellipse(0, 0, 5, 3, 0, 0, 7); ctx.fill();
+          ctx.strokeStyle = 'rgba(120,50,0,.4)'; ctx.lineWidth = 0.9;
+          ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(5, 0); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      }
       function drawCharacter(){
         if(character === 'pig') drawPig();
         else if(character === 'alien') drawAlien();
@@ -2867,6 +3007,7 @@
         else if(character === 'bee') drawBee();
         else if(character === 'robot') drawRobot();
         else if(character === 'ghost') drawGhost();
+        else if(character === 'turkey') drawTurkey();
         else drawBird();
       }
 
@@ -3341,6 +3482,11 @@
             }
             for(var l2 = 0; l2 < s.logs.length; l2++) drawLog(s.x + s.logs[l2].dx, s.logs[l2].w);
           }
+          // Thanksgiving pumpkins along the roadside / grass / riverbank
+          for(var pk2 = 0; pk2 < s.pumpkins.length; pk2++){
+            var pko = s.pumpkins[pk2];
+            drawPumpkin(s.x + pko.dx, (s.type === 'river' ? GROUND - 2 : GROUND + 3), pko.s);
+          }
           // golden egg — glowing, pulsing, sparkling
           if(s.egg && !s.egg.taken){
             var ex2 = s.x + s.egg.dx, ey2 = s.egg.y + Math.sin(time * 2.4 + s.egg.bob) * 5;
@@ -3371,6 +3517,7 @@
           ctx.beginPath(); ctx.ellipse(bird.x, GROUND + 14, 24 * shScale + 7, 6.5 * shScale + 2.5, 0, 0, 7); ctx.fill();
         }
         if(state !== 'ready') drawCharacter();
+        drawFestiveLeaves();
         // gentle vignette to focus the centre
         var vg = ctx.createRadialGradient(VW / 2, VH * 0.42, VH * 0.32, VW / 2, VH * 0.5, VH * 0.78);
         vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(10,35,60,.14)');
